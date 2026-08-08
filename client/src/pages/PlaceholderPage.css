@@ -1,0 +1,27 @@
+.placeholder-page {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: left;
+}
+
+.placeholder-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.placeholder-page h1 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #f3f4f6;
+  margin: 0 0 12px;
+}
+
+.placeholder-page p {
+  color: #9ca3af;
+  font-size: 15px;
+  max-width: 420px;
+  line-height: 1.6;
+}
