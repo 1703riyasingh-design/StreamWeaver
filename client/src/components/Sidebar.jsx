@@ -38,7 +38,10 @@ function Sidebar() {
       <button
         type="button"
         className="sidebar-link sidebar-logout"
-        onClick={() => navigate("/")}
+        onClick={() => {
+          sessionStorage.removeItem("streamweaver_user");
+          navigate("/");
+        }}
       >
         <span className="sidebar-icon">🚪</span>
         Logout

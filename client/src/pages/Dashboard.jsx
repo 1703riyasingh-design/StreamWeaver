@@ -80,11 +80,16 @@ function BarChart({ data }) {
 }
 
 function Dashboard() {
+  const userName =
+    sessionStorage.getItem("streamweaver_user") || "StreamWeaver";
+  const displayName =
+    userName.charAt(0).toUpperCase() + userName.slice(1);
+
   return (
     <div className="dashboard-page">
       <header className="dashboard-header">
         <div>
-          <h1>Welcome, StreamWeaver</h1>
+          <h1>Welcome, {displayName}</h1>
           <p className="dashboard-subtitle">
             Here&apos;s what&apos;s happening with your streams today.
           </p>
