@@ -8,4 +8,4 @@ Its primary objective is to process large files efficiently without causing memo
 - Node.js
 - Express
 - MongoDB
-- Spcket.io
+- Socket.io
