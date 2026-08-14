@@ -12,19 +12,44 @@ function UploadDataset() {
     }
   };
 
-  const handleUpload = () => {
-    if (!datasetName.trim()) {
-      alert("Please enter a dataset name before uploading.");
-      return;
+const handleUpload = async () => {
+  if (!datasetName.trim()) {
+    alert("Please enter a dataset name before uploading.");
+    return;
+  }
+
+  if (!file) {
+    alert("Please select a dataset file first.");
+    return;
+  }
+
+  try {
+    const formData = new FormData();
+
+    formData.append("file", file);
+    formData.append("datasetName", datasetName);
+
+    const response = await fetch("http://localhost:5000/api/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || "Upload failed");
     }
 
-    if (!file) {
-      alert("Please select a dataset file first.");
-      return;
-    }
+    console.log("Backend Response:", result);
 
-    alert(`Dataset "${datasetName}" uploaded successfully: ${file.name}`);
-  };
+    alert(
+      `Dataset "${datasetName}" uploaded successfully!\nTotal Rows: ${result.totalRows}`
+    );
+  } catch (error) {
+    console.error("Upload Error:", error);
+    alert(`Upload failed: ${error.message}`);
+  }
+};
 
   return (
     <div className="upload-page">
