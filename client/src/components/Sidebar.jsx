@@ -7,6 +7,7 @@ const navItems = [
   { to: "/media", icon: "📂", label: "Media Library" },
   { to: "/analytics", icon: "📊", label: "Analytics" },
   { to: "/profile", icon: "👤", label: "Profile" },
+  { to: "/upload-dataset", icon: "📤", label: "Upload Dataset" },
   { to: "/settings", icon: "⚙️", label: "Settings" },
 ];
 

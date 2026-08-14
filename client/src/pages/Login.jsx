@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Login.css";
 
-const EMAIL_PATTERN = /^[a-zA-Z][a-zA-Z0-9._-]*@mail\.com$/;
+const EMAIL_PATTERN = /^[a-zA-Z][a-zA-Z0-9._-]*@(gmail\.com|mail\.com)$/;
 
 function getPasswordChecks(password) {
   return {
@@ -34,7 +34,7 @@ function Login() {
       return "Email is required.";
     }
     if (!EMAIL_PATTERN.test(value.trim())) {
-      return "Use your name followed by @mail.com (e.g. priya@mail.com).";
+      return "Use your name followed by @gmail.com or @mail.com (e.g. priya@gmail.com).";
     }
     return "";
   }
@@ -63,7 +63,23 @@ function Login() {
       return;
     }
 
-    const userName = email.trim().split("@")[0];
+    const normalizedEmail = email.trim().toLowerCase();
+    const storedUsers = JSON.parse(localStorage.getItem("users") || "[]");
+    const storedUser = storedUsers.find(
+      (user) => user.email.toLowerCase() === normalizedEmail
+    );
+
+    if (!storedUser) {
+      setEmailError("No account found with this email. Please create an account first.");
+      return;
+    }
+
+    if (storedUser.password !== password) {
+      setPasswordError("Incorrect password for this account.");
+      return;
+    }
+
+    const userName = normalizedEmail.split("@")[0];
     sessionStorage.setItem("streamweaver_user", userName);
     navigate("/dashboard");
   }
@@ -146,6 +162,13 @@ function Login() {
         >
           Sign In
         </button>
+
+        <p>
+          Don't have an account? {" "}
+          <button type="button" onClick={() => navigate("/signup")}>
+            Sign Up
+          </button>
+        </p>
       </form>
     </div>
   );
