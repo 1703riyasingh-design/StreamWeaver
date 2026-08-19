@@ -1,0 +1,607 @@
+/* ============================================================
+   ULTIMATE RESPONSIVE OVERRIDE - SIDEBAR + LOGOUT FIXED
+   यह फाइल सभी पेजों को सही से responsive करेगी
+   ============================================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+/* ---------- LOGIN / SIGNUP PAGE ---------- */
+@media (max-width: 1024px) {
+  .login-page {
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 30px 20px !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    gap: 20px !important;
+    background: linear-gradient(180deg, rgba(3, 7, 18, 0.9), rgba(3, 7, 18, 0.6)), url("/background1.jpg") center/cover no-repeat !important;
+  }
+
+  .left-section {
+    width: 100% !important;
+    max-width: 500px !important;
+    text-align: center !important;
+    padding: 0 10px !important;
+  }
+  
+  .left-section h1 {
+    font-size: 38px !important;
+    color: #4ea8ff !important;
+    margin: 0 0 8px 0 !important;
+    white-space: nowrap !important;
+  }
+  
+  .left-section h2 {
+    font-size: 26px !important;
+    margin: 8px 0 !important;
+    color: white !important;
+  }
+  
+  .left-section p {
+    font-size: 16px !important;
+    max-width: 450px !important;
+    margin: 0 auto !important;
+    color: #d6d6d6 !important;
+    line-height: 1.6 !important;
+  }
+
+  .login-card {
+    width: 100% !important;
+    max-width: 400px !important;
+    padding: 28px 20px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .login-page {
+    padding: 20px 16px !important;
+    gap: 16px !important;
+  }
+  .left-section h1 {
+    font-size: 30px !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+  }
+  .left-section h2 {
+    font-size: 22px !important;
+  }
+  .left-section p {
+    font-size: 14px !important;
+    max-width: 100% !important;
+  }
+  .login-card {
+    max-width: 100% !important;
+    padding: 22px 16px !important;
+  }
+  .login-card h2 {
+    font-size: 24px !important;
+  }
+  .login-card input {
+    padding: 12px 14px !important;
+    font-size: 14px !important;
+  }
+  .login-card button {
+    padding: 14px !important;
+    font-size: 16px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-page {
+    padding: 16px 12px !important;
+    gap: 14px !important;
+  }
+  .left-section h1 {
+    font-size: 26px !important;
+  }
+  .left-section h2 {
+    font-size: 18px !important;
+  }
+  .left-section p {
+    font-size: 13px !important;
+  }
+  .login-card {
+    padding: 18px 12px !important;
+  }
+  .login-card h2 {
+    font-size: 20px !important;
+  }
+  .login-card input {
+    padding: 10px 12px !important;
+    font-size: 13px !important;
+  }
+  .login-card button {
+    padding: 12px !important;
+    font-size: 15px !important;
+  }
+}
+
+/* ---------- DASHBOARD LAYOUT (साइडबार + कंटेंट) ---------- */
+.dashboard-layout {
+  display: flex !important;
+  min-height: 100vh !important;
+}
+
+/* साइडबार - डेस्कटॉप पर */
+.sidebar {
+  width: 260px !important;
+  min-height: 100vh !important;
+  background: rgba(15, 23, 42, 0.95) !important;
+  border-right: 1px solid rgba(148, 163, 184, 0.15) !important;
+  padding: 24px 16px !important;
+  flex-shrink: 0 !important;
+  position: sticky !important;
+  top: 0 !important;
+  height: 100vh !important;
+  overflow-y: auto !important;
+  transition: transform 0.3s ease !important;
+  z-index: 100 !important;
+}
+
+/* साइडबार के अंदर का कंटेंट */
+.sidebar-nav {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  margin-top: 30px !important;
+}
+
+.sidebar-nav a,
+.sidebar-nav .nav-link {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 12px 16px !important;
+  border-radius: 12px !important;
+  color: #cbd5e1 !important;
+  text-decoration: none !important;
+  transition: background 0.2s, color 0.2s !important;
+  font-size: 15px !important;
+}
+
+.sidebar-nav a:hover,
+.sidebar-nav .nav-link:hover {
+  background: rgba(59, 130, 246, 0.15) !important;
+  color: #f8fafc !important;
+}
+
+.sidebar-nav .active {
+  background: rgba(59, 130, 246, 0.2) !important;
+  color: #4ea8ff !important;
+}
+
+/* लॉगआउट बटन - साइडबार के नीचे */
+.logout-btn,
+.sidebar .logout {
+  margin-top: auto !important;
+  padding: 12px 16px !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  border-radius: 12px !important;
+  color: #fca5a5 !important;
+  background: rgba(239, 68, 68, 0.08) !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  font-size: 15px !important;
+}
+
+.logout-btn:hover,
+.sidebar .logout:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border-color: #ef4444 !important;
+  color: #fff !important;
+}
+
+/* मुख्य कंटेंट एरिया */
+.main-content {
+  flex: 1 !important;
+  padding: 24px 28px !important;
+  background: rgba(8, 17, 32, 0.98) !important;
+  min-height: 100vh !important;
+}
+
+/* ---------- RESPONSIVE: साइडबार मोबाइल पर ---------- */
+@media (max-width: 1024px) {
+  .dashboard-layout {
+    flex-direction: column !important;
+  }
+
+  .sidebar {
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    position: relative !important;
+    top: 0 !important;
+    padding: 16px !important;
+    border-right: none !important;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.15) !important;
+    overflow-y: visible !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+
+  .sidebar-nav {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    margin-top: 10px !important;
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .sidebar-nav a,
+  .sidebar-nav .nav-link {
+    padding: 8px 14px !important;
+    font-size: 13px !important;
+    white-space: nowrap !important;
+  }
+
+  .logout-btn,
+  .sidebar .logout {
+    margin-top: 0 !important;
+    padding: 8px 16px !important;
+    font-size: 13px !important;
+    align-self: flex-end !important;
+  }
+
+  .main-content {
+    padding: 16px 14px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .sidebar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 12px !important;
+  }
+
+  .sidebar-nav {
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+    justify-content: center !important;
+  }
+
+  .sidebar-nav a,
+  .sidebar-nav .nav-link {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+    white-space: nowrap !important;
+    gap: 6px !important;
+  }
+
+  .logout-btn,
+  .sidebar .logout {
+    width: 100% !important;
+    justify-content: center !important;
+    margin-top: 8px !important;
+    padding: 10px !important;
+    font-size: 14px !important;
+  }
+
+  .main-content {
+    padding: 12px 8px !important;
+  }
+}
+
+/* ---------- DASHBOARD PAGE (कार्ड्स और चार्ट्स) ---------- */
+.dashboard-page {
+  padding: 0 !important;
+  max-width: 100% !important;
+}
+
+.dashboard-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  flex-wrap: wrap !important;
+  gap: 16px !important;
+  margin-bottom: 24px !important;
+}
+
+.dashboard-header h1 {
+  font-size: 28px !important;
+  font-weight: 600 !important;
+  color: #f3f4f6 !important;
+  margin: 0 0 4px !important;
+  word-break: break-word !important;
+}
+
+.dashboard-subtitle {
+  color: #9ca3af !important;
+  font-size: 15px !important;
+}
+
+.header-date {
+  color: #6b7280 !important;
+  font-size: 14px !important;
+  padding: 8px 16px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  white-space: nowrap !important;
+}
+
+.stats-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 18px !important;
+  margin-bottom: 24px !important;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 16px !important;
+  padding: 20px !important;
+  display: flex !important;
+  gap: 14px !important;
+  align-items: center !important;
+}
+
+.stat-icon {
+  font-size: 26px !important;
+  width: 48px !important;
+  height: 48px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(37, 99, 235, 0.2) !important;
+  border-radius: 12px !important;
+  flex-shrink: 0 !important;
+}
+
+.stat-content {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+
+.stat-label {
+  color: #9ca3af !important;
+  font-size: 14px !important;
+}
+
+.stat-value {
+  color: #f3f4f6 !important;
+  font-size: 26px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+}
+
+.stat-change {
+  font-size: 13px !important;
+  margin-top: 2px !important;
+}
+.stat-change.up {
+  color: #34d399 !important;
+}
+
+.charts-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 20px !important;
+  margin-bottom: 24px !important;
+}
+
+.chart-card {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 16px !important;
+  padding: 20px !important;
+}
+
+.chart-card h2 {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: #f3f4f6 !important;
+  margin: 0 !important;
+}
+
+.bar-chart {
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: space-between !important;
+  height: 140px !important;
+  gap: 6px !important;
+}
+
+.bar-group {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  height: 100% !important;
+}
+
+.bar {
+  width: 100% !important;
+  max-width: 32px !important;
+  background: linear-gradient(180deg, #4ea8ff, #2563eb) !important;
+  border-radius: 6px 6px 0 0 !important;
+  margin-top: auto !important;
+  min-height: 6px !important;
+}
+
+.bar-label {
+  font-size: 11px !important;
+  color: #6b7280 !important;
+  margin-top: 6px !important;
+}
+
+.activity-list {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+}
+
+.activity-list li {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 14px 18px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+  font-size: 14px !important;
+  color: #d1d5db !important;
+  flex-wrap: wrap !important;
+}
+
+.activity-list li:last-child {
+  border-bottom: none !important;
+}
+
+.activity-list li time {
+  margin-left: auto !important;
+  color: #6b7280 !important;
+  font-size: 12px !important;
+  white-space: nowrap !important;
+}
+
+/* ---------- RESPONSIVE: Dashboard मोबाइल ---------- */
+@media (max-width: 1024px) {
+  .stats-grid,
+  .charts-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .stat-card {
+    padding: 16px !important;
+  }
+  .stat-value {
+    font-size: 24px !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+  .dashboard-header h1 {
+    font-size: 22px !important;
+  }
+  .dashboard-subtitle {
+    font-size: 13px !important;
+  }
+  .header-date {
+    font-size: 12px !important;
+    padding: 6px 12px !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+  }
+  .stat-card {
+    flex-direction: row !important;
+    padding: 14px !important;
+    gap: 12px !important;
+  }
+  .stat-icon {
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 20px !important;
+  }
+  .stat-value {
+    font-size: 20px !important;
+  }
+  .stat-label {
+    font-size: 12px !important;
+  }
+  .stat-change {
+    font-size: 11px !important;
+  }
+  .chart-card {
+    padding: 14px !important;
+  }
+  .chart-card h2 {
+    font-size: 16px !important;
+  }
+  .bar-chart {
+    height: 100px !important;
+  }
+  .activity-list li {
+    padding: 10px 14px !important;
+    font-size: 13px !important;
+  }
+  .activity-list li time {
+    margin-left: 0 !important;
+    width: 100% !important;
+    text-align: left !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-header h1 {
+    font-size: 18px !important;
+  }
+  .stat-card {
+    padding: 10px !important;
+    gap: 8px !important;
+  }
+  .stat-icon {
+    width: 30px !important;
+    height: 30px !important;
+    font-size: 16px !important;
+  }
+  .stat-value {
+    font-size: 17px !important;
+  }
+  .stat-label {
+    font-size: 11px !important;
+  }
+  .chart-card {
+    padding: 10px !important;
+  }
+  .bar-chart {
+    height: 80px !important;
+  }
+  .activity-list li {
+    padding: 8px 10px !important;
+    font-size: 12px !important;
+  }
+}
+
+/* ---------- अन्य पेज (Upload, Placeholder, Settings) ---------- */
+/* ये पिछले कोड से लिए गए हैं, लेकिन संक्षिप्तता के लिए नीचे दिए गए हैं */
+
+.upload-page {
+  padding: 24px 16px !important;
+}
+.upload-shell { width: min(760px, 100%) !important; }
+.upload-header { flex-wrap: wrap !important; }
+.upload-header h1 { font-size: clamp(1.6rem, 4vw, 2.2rem) !important; }
+
+.placeholder-page {
+  padding: 20px 16px !important;
+}
+.placeholder-metrics {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+  gap: 16px !important;
+}
+.settings-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+  gap: 18px !important;
+}
+
+/* ---------- मोबाइल पर सभी पेजों का पैडिंग कम ---------- */
+@media (max-width: 640px) {
+  .upload-page { padding: 16px 10px !important; }
+  .placeholder-page { padding: 14px 10px !important; }
+  .settings-page { padding: 14px 10px !important; }
+  .placeholder-metrics { grid-template-columns: 1fr !important; }
+  .settings-grid { grid-template-columns: 1fr !important; }
+  .upload-header { flex-direction: column !important; align-items: flex-start !important; }
+  .upload-body { padding: 14px !important; }
+  .upload-button { width: 100% !important; }
+}
