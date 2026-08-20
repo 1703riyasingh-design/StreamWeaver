@@ -1,3 +1,4 @@
+const { createDataset } = require("../services/datasetService");
 const CSVParser = require("../streams/csvParser");
 const DataTransformStream = require("../streams/transformStream");
 
@@ -19,14 +20,37 @@ const uploadFile = async (req, res) => {
             results.push(row);
         });
 
-        transformer.on("end", () => {
-            res.status(200).json({
-                success: true,
-                message: "CSV processed successfully",
-                totalRows: results.length,
-                data: results
-            });
+      transformer.on("end", async () => {
+    try {
+        const dataset = await createDataset({
+            datasetName: req.file.originalname,
+            originalFileName: req.file.originalname,
+            fileType: req.file.mimetype,
+            totalRows: results.length,
+            columns: results.length > 0 ? Object.keys(results[0]) : [],
+            data: results
         });
+
+        res.status(200).json({
+            success: true,
+            message: "CSV processed and saved successfully",
+            datasetId: dataset._id,
+            totalRows: results.length,
+            data: results
+        });
+
+    } catch (error) {
+        console.error("Database Save Error:", error);
+
+        if (!res.headersSent) {
+            res.status(500).json({
+                success: false,
+                message: "Failed to save dataset",
+                error: error.message
+            });
+        }
+    }
+});
 
         transformer.on("error", (error) => {
             console.error("Transform Error:", error);
