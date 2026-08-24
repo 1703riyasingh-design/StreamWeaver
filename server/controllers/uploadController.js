@@ -1,9 +1,15 @@
-const { createDataset } = require("../services/datasetService");
+const fs = require("fs");
+const path = require("path");
+const { pipeline } = require("stream/promises");
+
 const CSVParser = require("../streams/csvParser");
 const DataTransformStream = require("../streams/transformStream");
 
 const uploadFile = async (req, res) => {
+    let filePath = null;
+
     try {
+        // Check uploaded file
         if (!req.file) {
             return res.status(400).json({
                 success: false,
@@ -11,83 +17,94 @@ const uploadFile = async (req, res) => {
             });
         }
 
-        const parser = new CSVParser();
-        const transformer = new DataTransformStream();
+        filePath = req.file.path;
 
-        const results = [];
+        const fileExtension = path
+            .extname(req.file.originalname)
+            .toLowerCase();
 
-        transformer.on("data", (row) => {
-            results.push(row);
-        });
-
-      transformer.on("end", async () => {
-    try {
-        const dataset = await createDataset({
-            datasetName: req.file.originalname,
-            originalFileName: req.file.originalname,
-            fileType: req.file.mimetype,
-            totalRows: results.length,
-            columns: results.length > 0 ? Object.keys(results[0]) : [],
-            data: results
-        });
-
-        res.status(200).json({
-            success: true,
-            message: "CSV processed and saved successfully",
-            datasetId: dataset._id,
-            totalRows: results.length,
-            data: results
-        });
-
-    } catch (error) {
-        console.error("Database Save Error:", error);
-
-        if (!res.headersSent) {
-            res.status(500).json({
+        // For now, complete CSV streaming first
+        if (fileExtension !== ".csv") {
+            return res.status(400).json({
                 success: false,
-                message: "Failed to save dataset",
-                error: error.message
+                message:
+                    "CSV streaming is implemented first. JSON support will be added next."
             });
         }
-    }
-});
 
-        transformer.on("error", (error) => {
-            console.error("Transform Error:", error);
+        // Create file read stream
+        const fileStream = fs.createReadStream(filePath, {
+            encoding: "utf8",
+            highWaterMark: 64 * 1024
+        });
 
-            if (!res.headersSent) {
-                res.status(500).json({
-                    success: false,
-                    message: "Data transformation failed",
-                    error: error.message
-                });
+        // Create CSV parser
+        const parser = new CSVParser();
+
+        // Create transformation stream
+        const transformer = new DataTransformStream();
+
+        let totalRows = 0;
+
+        // Keep only first 100 rows for preview
+        const previewRows = [];
+
+        transformer.on("data", (row) => {
+            totalRows++;
+
+            if (previewRows.length < 100) {
+                previewRows.push(row);
             }
         });
 
-        parser.on("error", (error) => {
-            console.error("CSV Parser Error:", error);
+        // Connect the streams
+        await pipeline(
+            fileStream,
+            parser,
+            transformer
+        );
 
-            if (!res.headersSent) {
-                res.status(500).json({
-                    success: false,
-                    message: "CSV parsing failed",
-                    error: error.message
-                });
+        console.log(
+            `CSV processing completed: ${totalRows} rows`
+        );
+
+        return res.status(200).json({
+            success: true,
+            message: "CSV streamed and processed successfully",
+
+            dataset: {
+                originalFileName: req.file.originalname,
+                fileType: "csv",
+                fileSize: req.file.size,
+                totalRows,
+                columns: parser.headers || [],
+                preview: previewRows
             }
         });
-
-        parser.pipe(transformer);
-
-        parser.end(req.file.buffer);
 
     } catch (error) {
         console.error("Upload Error:", error);
 
-        res.status(500).json({
-            success: false,
-            message: "File upload failed",
-            error: error.message
-        });
+        if (!res.headersSent) {
+            return res.status(500).json({
+                success: false,
+                message: "File streaming failed",
+                error: error.message
+            });
+        }
+
+    } finally {
+        // Delete temporary uploaded file
+        if (filePath) {
+            fs.unlink(filePath, (error) => {
+                if (error) {
+                    console.error(
+                        "Temporary file deletion failed:",
+                        error.message
+                    );
+                }
+            });
+        }
     }
 };
 

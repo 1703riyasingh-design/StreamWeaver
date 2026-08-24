@@ -6,6 +6,9 @@ class DataTransformStream extends Transform {
             ...options,
             objectMode: true
         });
+    
+    
+        this.processedRows = 0;
     }
 
     _transform(row, encoding, callback) {
@@ -13,6 +16,7 @@ class DataTransformStream extends Transform {
             const transformedRow = {
                 ...row
             };
+            this.processedRows++;
 
             this.push(transformedRow);
 
