@@ -1,1 +1,22 @@
+# Dependencies
 node_modules/
+client/node_modules/
+server/node_modules/
+
+# Environment variables
+.env
+client/.env
+server/.env
+.env.*
+!.env.example
+
+# Uploaded files
+uploads/
+server/uploads/
+
+# Vite cache
+client/node_modules/.vite/
+
+# Logs
+*.log
+npm-debug.log*
