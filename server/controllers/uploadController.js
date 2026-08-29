@@ -1,9 +1,15 @@
 const fs = require("fs");
 const path = require("path");
+const { Writable } = require("stream");
 const { pipeline } = require("stream/promises");
 
 const CSVParser = require("../streams/csvParser");
 const DataTransformStream = require("../streams/transformStream");
+
+const {
+    createDataset,
+    insertRowsInBulk
+} = require("../services/datasetService");
 
 const uploadFile = async (req, res) => {
     let filePath = null;
@@ -32,6 +38,14 @@ const uploadFile = async (req, res) => {
             });
         }
 
+          const dataset = await createDataset({
+            datasetName: req.file.originalname,
+            originalFileName: req.file.originalname,
+            fileType: "csv",
+            totalRows: 0,
+            columns: []
+        });
+        
         // Create file read stream
         const fileStream = fs.createReadStream(filePath, {
             encoding: "utf8",
@@ -44,16 +58,65 @@ const uploadFile = async (req, res) => {
         // Create transformation stream
         const transformer = new DataTransformStream();
 
+        const BATCH_SIZE = 5000;
+
         let totalRows = 0;
+
+        let batch = [];
 
         // Keep only first 100 rows for preview
         const previewRows = [];
 
-        transformer.on("data", (row) => {
-            totalRows++;
+        const databaseWriter = new Writable({
+            objectMode: true,
 
-            if (previewRows.length < 100) {
-                previewRows.push(row);
+            write: async (row, encoding, callback) => {
+                try {
+                    totalRows++;
+
+                    // Keep first 100 rows for preview
+                    if (previewRows.length < 100) {
+                        previewRows.push(row);
+                    }
+
+                    // Add row to batch
+                    batch.push(row);
+
+                    // Insert every 5000 rows
+                    if (batch.length >= BATCH_SIZE) {
+                        await insertRowsInBulk(
+                            dataset._id,
+                            batch
+                        );
+
+                        // Clear batch after successful insertion
+                        batch = [];
+                    }
+
+                    callback();
+
+                } catch (error) {
+                    callback(error);
+                }
+            },
+
+            final: async (callback) => {
+                try {
+                    // Insert remaining rows
+                    if (batch.length > 0) {
+                        await insertRowsInBulk(
+                            dataset._id,
+                            batch
+                        );
+
+                        batch = [];
+                    }
+
+                    callback();
+
+                } catch (error) {
+                    callback(error);
+                }
             }
         });
 
@@ -61,8 +124,25 @@ const uploadFile = async (req, res) => {
         await pipeline(
             fileStream,
             parser,
-            transformer
+            transformer,
+            databaseWriter
         );
+
+        // if (batch.length > 0) {
+        //     await insertRowsInBulk(
+        //         dataset._id,
+        //         batch
+        //     );
+
+        //     batch = [];
+        // }
+
+        // Update dataset metadata
+        dataset.totalRows = totalRows;
+        dataset.columns =
+            parser.headers || [];
+
+        await dataset.save();
 
         console.log(
             `CSV processing completed: ${totalRows} rows`
@@ -73,6 +153,7 @@ const uploadFile = async (req, res) => {
             message: "CSV streamed and processed successfully",
 
             dataset: {
+                datasetId: dataset._id,
                 originalFileName: req.file.originalname,
                 fileType: "csv",
                 fileSize: req.file.size,
