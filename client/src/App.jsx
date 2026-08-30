@@ -3,6 +3,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import UploadDataset from "./pages/UploadDataset";
+import DatasetPreview from "./pages/DatasetPreview";
 import DashboardLayout from "./components/DashboardLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PlaceholderPage from "./pages/PlaceholderPage";
@@ -105,6 +106,11 @@ function App() {
             <Route
               path="/upload-dataset"
               element={<UploadDataset />}
+            />
+
+            <Route
+              path="/dataset-preview"
+              element={<DatasetPreview />}
             />
 
           </Route>
