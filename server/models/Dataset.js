@@ -11,11 +11,13 @@ const datasetSchema = new mongoose.Schema(
     originalFileName: {
       type: String,
       required: true,
+      trim: true
     },
 
     fileType: {
       type: String,
       required: true,
+      trim: true
     },
 
     totalRows: {
@@ -27,11 +29,17 @@ const datasetSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
-
-    data: {
-      type: [mongoose.Schema.Types.Mixed],
-      default: [],
+      
+    mapping: {
+      type: Map,
+      of: String,
+      default: {},
     },
+
+    // data: {
+    //   type: [mongoose.Schema.Types.Mixed],
+    //   default: [],
+    // },
   },
   {
     timestamps: true,

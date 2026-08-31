@@ -1,9 +1,16 @@
 const fs = require("fs");
 const path = require("path");
+const { Writable } = require("stream");
 const { pipeline } = require("stream/promises");
 
 const CSVParser = require("../streams/csvParser");
 const DataTransformStream = require("../streams/transformStream");
+const applyMapping = require("../utils/applyMapping");
+
+const {
+    createDataset,
+    insertRowsInBulk
+} = require("../services/datasetService");
 
 const uploadFile = async (req, res) => {
     let filePath = null;
@@ -32,6 +39,29 @@ const uploadFile = async (req, res) => {
             });
         }
 
+           let mapping = {};
+
+        if (req.body.mapping) {
+            try {
+                mapping = JSON.parse(req.body.mapping);
+            } catch (error) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid column mapping format"
+                });
+            }
+        }
+
+
+          const dataset = await createDataset({
+            datasetName: req.body.datasetName ||
+                         req.file.originalname,
+            originalFileName: req.file.originalname,
+            fileType: "csv",
+            totalRows: 0,
+            columns: []
+        });
+        
         // Create file read stream
         const fileStream = fs.createReadStream(filePath, {
             encoding: "utf8",
@@ -44,16 +74,73 @@ const uploadFile = async (req, res) => {
         // Create transformation stream
         const transformer = new DataTransformStream();
 
+        const BATCH_SIZE = 5000;
+
         let totalRows = 0;
+
+        let batch = [];
 
         // Keep only first 100 rows for preview
         const previewRows = [];
 
-        transformer.on("data", (row) => {
-            totalRows++;
+        const databaseWriter = new Writable({
+            objectMode: true,
 
-            if (previewRows.length < 100) {
-                previewRows.push(row);
+            write: async (row, encoding, callback) => {
+                try {
+                    totalRows++;
+
+                      const mappedRow =
+                        Object.keys(mapping).length > 0
+                            ? applyMapping(
+                                row,
+                                mapping
+                            )
+                            : row;
+
+                    // Keep first 100 rows for preview
+                    if (previewRows.length < 100) {
+                        previewRows.push(mappedRow);
+                    }
+
+                    // Add row to batch
+                    batch.push(mappedRow);
+
+                    // Insert every 5000 rows
+                    if (batch.length >= BATCH_SIZE) {
+                        await insertRowsInBulk(
+                            dataset._id,
+                            batch
+                        );
+
+                        // Clear batch after successful insertion
+                        batch = [];
+                    }
+
+                    callback();
+
+                } catch (error) {
+                    callback(error);
+                }
+            },
+
+            final: async (callback) => {
+                try {
+                    // Insert remaining rows
+                    if (batch.length > 0) {
+                        await insertRowsInBulk(
+                            dataset._id,
+                            batch
+                        );
+
+                        batch = [];
+                    }
+
+                    callback();
+
+                } catch (error) {
+                    callback(error);
+                }
             }
         });
 
@@ -61,8 +148,35 @@ const uploadFile = async (req, res) => {
         await pipeline(
             fileStream,
             parser,
-            transformer
+            transformer,
+            databaseWriter
         );
+
+          const originalColumns =
+            parser.headers || [];
+
+
+        const mappedColumns =
+            Object.keys(mapping).length > 0
+                ? Object.values(mapping)
+                : originalColumns;
+
+        // if (batch.length > 0) {
+        //     await insertRowsInBulk(
+        //         dataset._id,
+        //         batch
+        //     );
+
+        //     batch = [];
+        // }
+
+        // Update dataset metadata
+        dataset.totalRows = totalRows;
+        dataset.columns = mappedColumns;
+        dataset.mapping =
+            mapping;
+
+        await dataset.save();
 
         console.log(
             `CSV processing completed: ${totalRows} rows`
@@ -73,11 +187,14 @@ const uploadFile = async (req, res) => {
             message: "CSV streamed and processed successfully",
 
             dataset: {
+                datasetId: dataset._id,
+                datasetName: dataset.datasetName,
                 originalFileName: req.file.originalname,
                 fileType: "csv",
                 fileSize: req.file.size,
                 totalRows,
-                columns: parser.headers || [],
+                columns:  mappedColumns,
+                mapping,
                 preview: previewRows
             }
         });
