@@ -1,8 +1,61 @@
+/* ============================================================
+   COMPLETE RESPONSIVE CSS - STREAMWEAVER
+   सभी समस्याएं ठीक – बिना दूसरी फाइल बदले
+   ============================================================ */
+
 * {
   box-sizing: border-box;
 }
 
-/* ---------- LOGIN / SIGNUP PAGE ---------- */
+/* ============================================================
+   LOGIN / SIGNUP PAGE – बेस स्टाइल
+   ============================================================ */
+
+.login-page {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 8%;
+  min-height: 100vh;
+  background: linear-gradient(90deg, rgba(3, 7, 18, 0.8), rgba(3, 7, 18, 0.35)),
+    url("/background1.jpg") center/cover no-repeat;
+}
+
+.left-section {
+  color: white;
+  width: 45%;
+}
+
+.left-section h1 {
+  font-size: 60px;
+  color: #4ea8ff;
+  margin: 0 0 8px 0;
+}
+.left-section h2 {
+  margin: 8px 0;
+  font-size: 38px;
+  color: white;
+}
+.left-section p {
+  font-size: 18px;
+  line-height: 1.7;
+  color: #d6d6d6;
+}
+
+.login-card {
+  width: 420px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px);
+  padding: 40px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* ============================================================
+   MOBILE – LOGIN / SIGNUP
+   ============================================================ */
+
 @media (max-width: 1024px) {
   .login-page {
     flex-direction: column !important;
@@ -12,7 +65,8 @@
     height: auto !important;
     min-height: 100vh !important;
     gap: 20px !important;
-    background: linear-gradient(180deg, rgba(3, 7, 18, 0.9), rgba(3, 7, 18, 0.6)), url("/background1.jpg") center/cover no-repeat !important;
+    background: linear-gradient(180deg, rgba(3, 7, 18, 0.9), rgba(3, 7, 18, 0.6)),
+      url("/background1.jpg") center/cover no-repeat !important;
   }
 
   .left-section {
@@ -21,26 +75,24 @@
     text-align: center !important;
     padding: 0 10px !important;
   }
-  
+
   .left-section h1 {
     font-size: 38px !important;
-    color: #4ea8ff !important;
-    margin: 0 0 8px 0 !important;
     white-space: nowrap !important;
   }
-  
   .left-section h2 {
     font-size: 26px !important;
     margin: 8px 0 !important;
-    color: white !important;
+    display: block !important;
+    white-space: normal !important;
+    word-break: break-word !important;
   }
-  
   .left-section p {
     font-size: 16px !important;
     max-width: 450px !important;
     margin: 0 auto !important;
-    color: #d6d6d6 !important;
     line-height: 1.6 !important;
+    word-wrap: break-word !important;
   }
 
   .login-card {
@@ -66,6 +118,7 @@
   .left-section p {
     font-size: 14px !important;
     max-width: 100% !important;
+    padding: 0 12px !important;
   }
   .login-card {
     max-width: 100% !important;
@@ -97,6 +150,7 @@
   }
   .left-section p {
     font-size: 13px !important;
+    padding: 0 10px !important;
   }
   .login-card {
     padding: 18px 12px !important;
@@ -114,13 +168,289 @@
   }
 }
 
-/* ---------- DASHBOARD LAYOUT (साइडबार + कंटेंट) ---------- */
+/* ============================================================
+   SIGNUP PAGE – बायीं तरफ खाली जगह हटाएँ
+   ============================================================ */
+
+/* जब .login-page में .left-section न हो (Signup) */
+.login-page:not(:has(.left-section)) {
+  justify-content: center !important;
+  padding: 20px !important;
+}
+.login-page:not(:has(.left-section)) .login-card {
+  max-width: 440px !important;
+  width: 100% !important;
+  margin: 0 auto !important;
+}
+
+/* ============================================================
+   PASSWORD RULES & LABELS (Signup extra fixes)
+   ============================================================ */
+
+.login-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.login-card label {
+  color: #ccc;
+  font-size: 13px;
+  text-align: left;
+  margin-top: 8px;
+}
+
+.password-rules {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  text-align: left;
+  width: 100%;
+}
+.password-rules li {
+  color: #888;
+  font-size: 12px;
+  padding: 3px 0 3px 20px;
+  position: relative;
+  word-break: break-word;
+}
+.password-rules li::before {
+  content: "○";
+  position: absolute;
+  left: 0;
+  color: #666;
+}
+.password-rules li.met {
+  color: #86efac;
+}
+.password-rules li.met::before {
+  content: "✓";
+  color: #86efac;
+}
+
+.password-strength {
+  font-size: 13px;
+  text-align: left;
+  margin-top: 6px;
+}
+.password-strength.weak {
+  color: #fca5a5;
+}
+.password-strength.strong {
+  color: #86efac;
+}
+
+/* ============================================================
+   BUTTONS – एक जैसा हर जगह (Login & Signup)
+   ============================================================ */
+
+/* सभी .login-card के primary buttons (Sign In, Sign Up) */
+.login-card button[type="submit"],
+.login-card .btn-primary {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 10px;
+  background: #2563eb;
+  color: white;
+  font-size: 17px;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: all 0.3s ease;
+  font-weight: 600;
+}
+
+.login-card button[type="submit"]:hover:not(:disabled),
+.login-card .btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #1d4ed8, #3b82f6) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4) !important;
+}
+
+/* Signup page पर "Already have an account?" वाला link button */
+.login-card p button[type="button"] {
+  background: transparent;
+  border: none;
+  color: #4ea8ff;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 15px;
+  transition: color 0.2s;
+}
+.login-card p button[type="button"]:hover {
+  text-decoration: underline;
+  color: #93c5fd;
+}
+
+/* Signin page के "Don't have an account?" का भी same */
+.login-card .link-btn {
+  background: transparent;
+  border: none;
+  color: #4ea8ff;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 15px;
+}
+.login-card .link-btn:hover {
+  text-decoration: underline;
+  color: #93c5fd;
+}
+
+/* ============================================================
+   TOGGLE MENU – LEFT SIDE SLIDE (पहले जैसा)
+   ============================================================ */
+
+.hamburger-btn {
+  display: none;
+  position: fixed;
+  top: 16px;
+  left: 16px;                    /* ✅ left side */
+  z-index: 1100;
+  background: rgba(8, 17, 32, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(78, 168, 255, 0.2);
+  border-radius: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  color: #f3f4f6;
+  font-size: 24px;
+  line-height: 1;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.hamburger-btn:hover {
+  background: rgba(78, 168, 255, 0.15);
+  border-color: rgba(78, 168, 255, 0.4);
+  transform: scale(1.05);
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.sidebar-overlay.active {
+  display: block;
+  opacity: 1;
+}
+
+/* Sidebar Wrapper – left से slide */
+.sidebar-wrapper {
+  display: flex;
+  flex-shrink: 0;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Desktop: हमेशा visible */
+@media (min-width: 1025px) {
+  .sidebar-wrapper {
+    transform: translateX(0) !important;
+  }
+  .hamburger-btn {
+    display: none !important;
+  }
+  .sidebar-overlay {
+    display: none !important;
+  }
+}
+
+/* Mobile / Tablet: left से slide-in */
+@media (max-width: 1024px) {
+  .hamburger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sidebar-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;                      /* ✅ left side */
+    height: 100vh;
+    z-index: 1000;
+    transform: translateX(-105%);  /* ✅ left से बाहर */
+    width: 280px;
+    max-width: 80vw;
+    box-shadow: 8px 0 40px rgba(0, 0, 0, 0.6);
+    border-radius: 0;
+  }
+  .sidebar-wrapper.open {
+    transform: translateX(0);
+  }
+  /* Sidebar को wrapper के अंदर */
+  .sidebar {
+    width: 100% !important;
+    height: 100vh !important;
+    border-radius: 0 !important;
+    border-right: 1px solid rgba(78, 168, 255, 0.1) !important;
+    border-left: none !important;
+    position: relative !important;
+    top: 0 !important;
+    overflow-y: auto !important;
+    padding: 24px 16px 20px !important;
+    background: rgba(8, 17, 32, 0.98) !important;
+  }
+  .dashboard-main {
+    padding: 20px 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .hamburger-btn {
+    top: 12px;
+    left: 12px;
+    padding: 8px 12px;
+    font-size: 20px;
+  }
+  .sidebar-wrapper {
+    width: 260px;
+  }
+  .dashboard-main {
+    padding: 16px 10px;
+  }
+}
+@media (max-width: 480px) {
+  .sidebar-wrapper {
+    width: 240px;
+  }
+  .hamburger-btn {
+    top: 10px;
+    left: 10px;
+    padding: 6px 10px;
+    font-size: 18px;
+  }
+}
+
+/* ============================================================
+   USERSNAME – सुनिश्चित करें कि वह दिखे (z-index ठीक)
+   ============================================================ */
+
+/* .dashboard-header h1 में username है – उसे ठीक से show करें */
+.dashboard-header h1 {
+  font-size: 28px !important;
+  font-weight: 600 !important;
+  color: #f3f4f6 !important;
+  margin: 0 0 4px !important;
+  word-break: break-word !important;
+  z-index: 1;                     /* ऊपर रखें */
+  position: relative;            /* ताकि किसी overlay से ढके नहीं */
+}
+
+/* ============================================================
+   DASHBOARD LAYOUT – बाकी सब perfect
+   ============================================================ */
+
 .dashboard-layout {
   display: flex !important;
   min-height: 100vh !important;
 }
 
-/* साइडबार - डेस्कटॉप पर */
 .sidebar {
   width: 260px !important;
   min-height: 100vh !important;
@@ -136,12 +466,50 @@
   z-index: 100 !important;
 }
 
-/* साइडबार के अंदर का कंटेंट */
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 4px 24px;
+  border-bottom: 1px solid rgba(78, 168, 255, 0.08);
+  margin-bottom: 20px;
+}
+.sidebar-brand .brand-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2563eb, #4ea8ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: white;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.35);
+}
+.sidebar-brand .brand-text {
+  font-size: 20px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #f3f4f6, #4ea8ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.5px;
+}
+
 .sidebar-nav {
   display: flex !important;
   flex-direction: column !important;
   gap: 8px !important;
   margin-top: 30px !important;
+}
+
+.sidebar-nav .nav-label {
+  font-size: 11px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+  color: rgba(148, 163, 184, 0.4) !important;
+  padding: 12px 12px 6px !important;
+  font-weight: 600 !important;
 }
 
 .sidebar-nav a,
@@ -155,6 +523,14 @@
   text-decoration: none !important;
   transition: background 0.2s, color 0.2s !important;
   font-size: 15px !important;
+  cursor: pointer;
+}
+
+.sidebar-nav a .nav-icon,
+.sidebar-nav .nav-link .nav-icon {
+  font-size: 20px !important;
+  width: 24px !important;
+  text-align: center !important;
 }
 
 .sidebar-nav a:hover,
@@ -168,125 +544,56 @@
   color: #4ea8ff !important;
 }
 
-/* लॉगआउट बटन - साइडबार के नीचे */
+.sidebar-footer {
+  margin-top: auto !important;
+  padding-top: 16px !important;
+  border-top: 1px solid rgba(78, 168, 255, 0.06) !important;
+}
+
 .logout-btn,
 .sidebar .logout {
-  margin-top: auto !important;
-  padding: 12px 16px !important;
-  border: 1px solid rgba(239, 68, 68, 0.3) !important;
-  border-radius: 12px !important;
-  color: #fca5a5 !important;
-  background: rgba(239, 68, 68, 0.08) !important;
-  cursor: pointer !important;
-  transition: all 0.2s !important;
   display: flex !important;
   align-items: center !important;
-  gap: 10px !important;
+  gap: 14px !important;
+  padding: 12px 16px !important;
+  border: 1px solid rgba(239, 68, 68, 0.15) !important;
+  border-radius: 12px !important;
+  background: rgba(239, 68, 68, 0.05) !important;
+  color: rgba(252, 165, 165, 0.8) !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
   font-size: 15px !important;
+  font-weight: 500 !important;
+  width: 100% !important;
+  text-align: left !important;
+}
+
+.logout-btn .logout-icon,
+.sidebar .logout .logout-icon {
+  font-size: 20px !important;
+  width: 24px !important;
+  text-align: center !important;
 }
 
 .logout-btn:hover,
 .sidebar .logout:hover {
-  background: rgba(239, 68, 68, 0.2) !important;
-  border-color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.12) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
   color: #fff !important;
 }
 
-/* मुख्य कंटेंट एरिया */
-.main-content {
+.main-content,
+.dashboard-main {
   flex: 1 !important;
   padding: 24px 28px !important;
   background: rgba(8, 17, 32, 0.98) !important;
   min-height: 100vh !important;
 }
 
-/* ---------- RESPONSIVE: साइडबार मोबाइल पर ---------- */
-@media (max-width: 1024px) {
-  .dashboard-layout {
-    flex-direction: column !important;
-  }
+/* ============================================================
+   DASHBOARD PAGE – Cards, Charts, Activity
+   ============================================================ */
 
-  .sidebar {
-    width: 100% !important;
-    height: auto !important;
-    min-height: auto !important;
-    position: relative !important;
-    top: 0 !important;
-    padding: 16px !important;
-    border-right: none !important;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.15) !important;
-    overflow-y: visible !important;
-    display: flex !important;
-    flex-wrap: wrap !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-  }
-
-  .sidebar-nav {
-    flex-direction: row !important;
-    flex-wrap: wrap !important;
-    gap: 6px !important;
-    margin-top: 10px !important;
-    width: 100% !important;
-    justify-content: center !important;
-  }
-
-  .sidebar-nav a,
-  .sidebar-nav .nav-link {
-    padding: 8px 14px !important;
-    font-size: 13px !important;
-    white-space: nowrap !important;
-  }
-
-  .logout-btn,
-  .sidebar .logout {
-    margin-top: 0 !important;
-    padding: 8px 16px !important;
-    font-size: 13px !important;
-    align-self: flex-end !important;
-  }
-
-  .main-content {
-    padding: 16px 14px !important;
-  }
-}
-
-@media (max-width: 640px) {
-  .sidebar {
-    flex-direction: column !important;
-    align-items: stretch !important;
-    padding: 12px !important;
-  }
-
-  .sidebar-nav {
-    flex-wrap: wrap !important;
-    gap: 4px !important;
-    justify-content: center !important;
-  }
-
-  .sidebar-nav a,
-  .sidebar-nav .nav-link {
-    padding: 6px 12px !important;
-    font-size: 12px !important;
-    white-space: nowrap !important;
-    gap: 6px !important;
-  }
-
-  .logout-btn,
-  .sidebar .logout {
-    width: 100% !important;
-    justify-content: center !important;
-    margin-top: 8px !important;
-    padding: 10px !important;
-    font-size: 14px !important;
-  }
-
-  .main-content {
-    padding: 12px 8px !important;
-  }
-}
-
-/* ---------- DASHBOARD PAGE (कार्ड्स और चार्ट्स) ---------- */
 .dashboard-page {
   padding: 0 !important;
   max-width: 100% !important;
@@ -307,6 +614,8 @@
   color: #f3f4f6 !important;
   margin: 0 0 4px !important;
   word-break: break-word !important;
+  position: relative;
+  z-index: 1;
 }
 
 .dashboard-subtitle {
@@ -463,7 +772,10 @@
   white-space: nowrap !important;
 }
 
-/* ---------- RESPONSIVE: Dashboard मोबाइल ---------- */
+/* ============================================================
+   RESPONSIVE – DASHBOARD MOBILE
+   ============================================================ */
+
 @media (max-width: 1024px) {
   .stats-grid,
   .charts-grid {
@@ -565,15 +877,22 @@
   }
 }
 
-/* ---------- अन्य पेज (Upload, Placeholder, Settings) ---------- */
-/* ये पिछले कोड से लिए गए हैं, लेकिन संक्षिप्तता के लिए नीचे दिए गए हैं */
+/* ============================================================
+   OTHER PAGES (Upload, Placeholder, Settings)
+   ============================================================ */
 
 .upload-page {
   padding: 24px 16px !important;
 }
-.upload-shell { width: min(760px, 100%) !important; }
-.upload-header { flex-wrap: wrap !important; }
-.upload-header h1 { font-size: clamp(1.6rem, 4vw, 2.2rem) !important; }
+.upload-shell {
+  width: min(760px, 100%) !important;
+}
+.upload-header {
+  flex-wrap: wrap !important;
+}
+.upload-header h1 {
+  font-size: clamp(1.6rem, 4vw, 2.2rem) !important;
+}
 
 .placeholder-page {
   padding: 20px 16px !important;
@@ -589,14 +908,67 @@
   gap: 18px !important;
 }
 
-/* ---------- मोबाइल पर सभी पेजों का पैडिंग कम ---------- */
+/* ============================================================
+   MOBILE – सभी पेजों का पैडिंग कम
+   ============================================================ */
+
 @media (max-width: 640px) {
-  .upload-page { padding: 16px 10px !important; }
-  .placeholder-page { padding: 14px 10px !important; }
-  .settings-page { padding: 14px 10px !important; }
-  .placeholder-metrics { grid-template-columns: 1fr !important; }
-  .settings-grid { grid-template-columns: 1fr !important; }
-  .upload-header { flex-direction: column !important; align-items: flex-start !important; }
-  .upload-body { padding: 14px !important; }
-  .upload-button { width: 100% !important; }
+  .upload-page {
+    padding: 16px 10px !important;
+  }
+  .placeholder-page {
+    padding: 14px 10px !important;
+  }
+  .settings-page {
+    padding: 14px 10px !important;
+  }
+  .placeholder-metrics {
+    grid-template-columns: 1fr !important;
+  }
+  .settings-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .upload-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+  .upload-body {
+    padding: 14px !important;
+  }
+  .upload-button {
+    width: 100% !important;
+  }
+}
+/* ============================================================
+   FIX: Username पूरा दिखे (कटे नहीं)
+   ============================================================ */
+
+/* ============================================================
+   FINAL FIX – Username को सही से दिखाना (मोबाइल)
+   ============================================================ */
+
+/* Mobile पर header में बायीं तरफ space दें ताकि hamburger button से टकराव न हो */
+@media (max-width: 640px) {
+  .dashboard-header {
+    padding-left: 56px !important;   /* हैम्बर्गर बटन के लिए जगह */
+    padding-right: 16px !important;  /* संतुलन के लिए */
+    gap: 8px !important;
+  }
+
+  .dashboard-header h1 {
+    font-size: 20px !important;
+    max-width: 100% !important;
+    word-break: break-word !important;
+    white-space: normal !important;
+    line-height: 1.3 !important;
+    margin: 0 !important;
+    /* z-index पहले से है, किसी और चीज की जरूरत नहीं */
+  }
+}
+
+/* अगर 1024px से नीचे भी समस्या हो तो */
+@media (max-width: 1024px) and (min-width: 641px) {
+  .dashboard-header {
+    padding-left: 50px !important;
+  }
 }
