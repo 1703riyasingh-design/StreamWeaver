@@ -29,6 +29,12 @@ const datasetSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+      
+    mapping: {
+      type: Map,
+      of: String,
+      default: {},
+    },
 
     // data: {
     //   type: [mongoose.Schema.Types.Mixed],
