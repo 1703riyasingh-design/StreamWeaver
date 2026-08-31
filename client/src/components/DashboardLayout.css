@@ -18,3 +18,128 @@
     padding: 24px 16px;
   }
 }
+/* =============================================================
+   TOGGLE MENU (HAMBURGER) & SIDEBAR OVERLAY STYLES
+   ============================================================= */
+
+.hamburger-btn {
+  display: none; /* Desktop पर hidden */
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 1100;
+  background: rgba(8, 17, 32, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(78, 168, 255, 0.2);
+  border-radius: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  color: #f3f4f6;
+  font-size: 24px;
+  line-height: 1;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.hamburger-btn:hover {
+  background: rgba(78, 168, 255, 0.15);
+  border-color: rgba(78, 168, 255, 0.4);
+  transform: scale(1.05);
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.sidebar-overlay.active {
+  display: block;
+  opacity: 1;
+}
+
+.sidebar-wrapper {
+  display: flex;
+  flex-shrink: 0;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Desktop: हमेशा visible */
+@media (min-width: 1025px) {
+  .sidebar-wrapper {
+    transform: translateX(0) !important;
+  }
+  .hamburger-btn {
+    display: none !important;
+  }
+  .sidebar-overlay {
+    display: none !important;
+  }
+}
+
+/* Mobile / Tablet: hidden by default, slide-in on toggle */
+@media (max-width: 1024px) {
+  .hamburger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .sidebar-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 1000;
+    transform: translateX(-105%);
+    width: 280px;
+    max-width: 80vw;
+    box-shadow: 8px 0 40px rgba(0, 0, 0, 0.6);
+    border-radius: 0;
+  }
+  .sidebar-wrapper.open {
+    transform: translateX(0);
+  }
+  /* Sidebar को wrapper के अंदर full height दें */
+  .sidebar {
+    width: 100% !important;
+    height: 100vh !important;
+    border-radius: 0 !important;
+    border-right: 1px solid rgba(78, 168, 255, 0.1) !important;
+    position: relative !important;
+    top: 0 !important;
+    overflow-y: auto !important;
+    padding: 24px 16px 20px !important;
+  }
+  .dashboard-main {
+    padding: 20px 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .hamburger-btn {
+    top: 12px;
+    left: 12px;
+    padding: 8px 12px;
+    font-size: 20px;
+  }
+  .sidebar-wrapper {
+    width: 260px;
+  }
+  .dashboard-main {
+    padding: 16px 10px;
+  }
+}
+@media (max-width: 480px) {
+  .sidebar-wrapper {
+    width: 240px;
+  }
+  .hamburger-btn {
+    top: 10px;
+    left: 10px;
+    padding: 6px 10px;
+    font-size: 18px;
+  }
+}
