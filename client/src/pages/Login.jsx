@@ -80,7 +80,21 @@ function Login() {
     }
 
     const userName = normalizedEmail.split("@")[0];
+    const baseUserName = userName.replace(/[^a-zA-Z]/g, "") || "User";
+    const savedUserId =
+      storedUser.userId || `${baseUserName.charAt(0).toUpperCase()}${baseUserName.slice(1)}${String(Math.floor(Math.random() * 9000) + 1000)}`;
+
+    if (!storedUser.userId) {
+      const updatedUsers = JSON.parse(localStorage.getItem("users") || "[]").map((user) =>
+        user.email.toLowerCase() === normalizedEmail
+          ? { ...user, userId: savedUserId }
+          : user
+      );
+      localStorage.setItem("users", JSON.stringify(updatedUsers));
+    }
+
     sessionStorage.setItem("streamweaver_user", userName);
+    sessionStorage.setItem("streamweaver_user_id", storedUser.userId || savedUserId);
     navigate("/dashboard");
   }
 

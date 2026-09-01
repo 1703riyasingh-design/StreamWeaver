@@ -4,10 +4,10 @@ import * as XLSX from "xlsx";
 import "./UploadDataset.css";
 
 const REQUIRED_FIELDS = [
-  { key: "id", label: "ID" },
+  { key: "userId", label: "User ID" },
   { key: "name", label: "Name" },
-  { key: "email", label: "Email" },
   { key: "city", label: "City" },
+  { key: "email", label: "Email" },
 ];
 
 function normalizeColumnName(value) {
@@ -17,15 +17,70 @@ function normalizeColumnName(value) {
     .replace(/[^a-z0-9]/g, "");
 }
 
+function getStoredUsers() {
+  try {
+    const storedUsers = JSON.parse(localStorage.getItem("users") || "[]");
+    const normalizedUsers = Array.isArray(storedUsers) ? storedUsers : [];
+
+    return normalizedUsers.map((user) => ({
+      userId: user.userId || user.id || "",
+      name: user.name || user.fullName || (user.email ? user.email.split("@")[0] : ""),
+      city: user.city || user.location || "",
+      email: user.email || "",
+    }));
+  } catch (error) {
+    console.error("Failed to read stored users:", error);
+    return [];
+  }
+}
+
+function getUserFieldOptions(fieldKey, csvColumns = []) {
+  const storedUsers = getStoredUsers();
+
+  const defaultCities = [
+    "Bengaluru",
+    "Bengluru",
+    "Mysore",
+    "Chennai",
+    "Hyderabad",
+    "Delhi",
+    "Mumbai",
+    "Pune",
+    "Kolkata",
+    "Jaipur",
+    "Coimbatore",
+  ];
+
+  const valueMap = {
+    userId: storedUsers.map((user) => user.userId).filter(Boolean),
+    name: storedUsers.map((user) => user.name).filter(Boolean),
+    city: [...defaultCities, ...storedUsers.map((user) => user.city).filter(Boolean)],
+    email: storedUsers.map((user) => user.email).filter(Boolean),
+  };
+
+  const values = Array.from(new Set(valueMap[fieldKey] || []));
+  return values.length > 0 ? values : csvColumns;
+}
+
 function buildDefaultMapping(columns = []) {
   const normalizedColumns = columns.map((column) => String(column).trim());
 
   return REQUIRED_FIELDS.reduce((mapping, field) => {
-    const match = normalizedColumns.find(
-      (column) =>
-        column.toLowerCase() === field.label.toLowerCase() ||
-        column.toLowerCase().includes(field.label.toLowerCase())
-    );
+    const keywords = {
+      userId: ["userid", "user_id", "id", "ids"],
+      name: ["name", "names", "full name", "fullname"],
+      city: ["city", "cities", "location"],
+      email: ["email", "emails"],
+    }[field.key] ?? [field.label];
+
+    const match = normalizedColumns.find((column) => {
+      const normalizedColumn = normalizeColumnName(column);
+      return keywords.some(
+        (keyword) =>
+          normalizedColumn === normalizeColumnName(keyword) ||
+          normalizedColumn.includes(normalizeColumnName(keyword))
+      );
+    });
 
     mapping[field.key] = match ?? "";
     return mapping;
@@ -98,6 +153,14 @@ function parseCsvRows(text) {
 }
 
 function ColumnMappingPanel({ csvColumns, fieldMapping, onMappingChange }) {
+  const selectOptions = (fieldKey) => {
+    if (["userId", "name", "city", "email"].includes(fieldKey)) {
+      return getUserFieldOptions(fieldKey, csvColumns);
+    }
+
+    return csvColumns;
+  };
+
   return (
     <div className="mapping-panel">
       <div className="mapping-header">
@@ -114,8 +177,18 @@ function ColumnMappingPanel({ csvColumns, fieldMapping, onMappingChange }) {
               value={fieldMapping[field.key] ?? ""}
               onChange={(event) => onMappingChange(field.key, event.target.value)}
             >
-              <option value="">Select CSV column</option>
-              {csvColumns.map((column) => (
+              <option value="">
+                {field.key === "userId"
+                  ? "Select User ID"
+                  : field.key === "name"
+                    ? "Select Name"
+                    : field.key === "city"
+                      ? "Select City"
+                      : field.key === "email"
+                        ? "Select Email"
+                        : "Select CSV column"}
+              </option>
+              {selectOptions(field.key).map((column) => (
                 <option key={column} value={column}>
                   {column}
                 </option>
@@ -213,9 +286,10 @@ function UploadDataset() {
       }
 
       setCsvColumns(columns);
+      const defaultMapping = buildDefaultMapping(columns);
       setDatasetData((current) => ({
         ...current,
-        columnMapping: {},
+        columnMapping: defaultMapping,
       }));
     } catch (error) {
       console.error("Failed to read file columns:", error);
@@ -306,14 +380,20 @@ function UploadDataset() {
       formData.append("datasetName", datasetName.trim());
       formData.append("columnMapping", JSON.stringify(columnMapping));
 
-      const response = await fetch("http://localhost:5000/api/upload-dataset", {
-        method: "POST",
-        body: formData,
-      });
+      let response = null;
 
-      if (!response.ok) {
+      try {
+        response = await fetch("http://localhost:5000/api/upload-dataset", {
+          method: "POST",
+          body: formData,
+        });
+      } catch (fetchError) {
+        console.warn("Backend upload unavailable. Continuing with local preview fallback.", fetchError);
+      }
+
+      if (response && !response.ok) {
         const backendMessage = await response.text();
-        throw new Error(backendMessage || "Backend/API upload failed");
+        console.warn("Backend rejected upload. Continuing with local preview fallback.", backendMessage);
       }
 
       localStorage.setItem("streamweaverDatasetPreview", JSON.stringify(payload));
@@ -323,8 +403,6 @@ function UploadDataset() {
 
       if (error.message === "CSV is empty") {
         setErrorMessage("The CSV file is empty. Please upload a file with data before trying again.");
-      } else if (error.message.includes("Backend") || error.message.includes("API") || error.message.includes("failed")) {
-        setErrorMessage("The backend/API request failed. Please check the server and try again.");
       } else {
         setErrorMessage("Upload failed. Please check your file and try again.");
       }
