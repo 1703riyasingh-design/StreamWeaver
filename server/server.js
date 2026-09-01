@@ -5,10 +5,12 @@ const cors = require("cors");
 
 const app = express();
 const uploadRoutes = require("./routes/uploadRoutes");
+const datasetRoutes = require("./routes/datasetRoutes");
 app.use(cors());
 app.use(express.json());
 
 app.use("/api", uploadRoutes);
+app.use("/api/datasets", datasetRoutes);
 
 app.get("/", (req, res) => {
     res.send("🚀 StreamWeaver Backend Running...");
