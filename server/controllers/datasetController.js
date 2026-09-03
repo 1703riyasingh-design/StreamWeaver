@@ -115,9 +115,45 @@ const getDatasetRows = async (req, res) => {
     }
 };
 
+// DELETE dataset and its rows
+const deleteDataset = async (req, res) => {
+    try {
+        const dataset = await Dataset.findById(req.params.id);
+
+        if (!dataset) {
+            return res.status(404).json({
+                success: false,
+                message: "Dataset not found"
+            });
+        }
+
+        // Delete all rows belonging to this dataset
+        await DatasetRow.deleteMany({
+            datasetId: req.params.id
+        });
+
+        // Delete dataset metadata
+        await Dataset.findByIdAndDelete(req.params.id);
+
+        return res.status(200).json({
+            success: true,
+            message: "Dataset and its rows deleted successfully"
+        });
+
+    } catch (error) {
+        console.error("Delete Dataset Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to delete dataset",
+            error: error.message
+        });
+    }
+};
 
 module.exports = {
     getAllDatasets,
     getDatasetById,
-    getDatasetRows
+    getDatasetRows,
+    deleteDataset
 };
