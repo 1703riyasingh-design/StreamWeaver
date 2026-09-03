@@ -12,8 +12,19 @@ const datasetRowSchema = new mongoose.Schema(
         data: {
             type: mongoose.Schema.Types.Mixed,
             required: true
+        },
+        
+        isValid: {
+            type: Boolean,
+            default: true
+        },
+
+        errors: {
+            type: [String],
+            default: []
         }
     },
+    
     {
         timestamps: true
     }
