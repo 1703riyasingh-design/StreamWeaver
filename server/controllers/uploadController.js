@@ -6,6 +6,7 @@ const { pipeline } = require("stream/promises");
 const CSVParser = require("../streams/csvParser");
 const DataTransformStream = require("../streams/transformStream");
 const applyMapping = require("../utils/applyMapping");
+const validateRow = require("../services/validateRow");
 
 const {
     createDataset,
@@ -98,13 +99,23 @@ const uploadFile = async (req, res) => {
                             )
                             : row;
 
+                            const validation = validateRow(mappedRow);
+
                     // Keep first 100 rows for preview
-                    if (previewRows.length < 100) {
-                        previewRows.push(mappedRow);
+                   if (previewRows.length < 100) {
+                        previewRows.push({
+                            data: mappedRow,
+                            isValid: validation.isValid,
+                            errors: validation.errors
+                        });
                     }
 
                     // Add row to batch
-                    batch.push(mappedRow);
+                    batch.push({
+                        data: mappedRow,
+                        isValid: validation.isValid,
+                        errors: validation.errors
+                    });
 
                     // Insert every 5000 rows
                     if (batch.length >= BATCH_SIZE) {
