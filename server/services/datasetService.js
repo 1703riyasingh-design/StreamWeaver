@@ -2,14 +2,14 @@ const Dataset = require("../models/Dataset");
 const DatasetRow = require("../models/DatasetRow");
 
 const createDataset = async (datasetData) => {
-    const dataset = new Dataset(datasetData)({
-     datasetName: datasetData.datasetName,
+    const dataset = new Dataset({
+        datasetName: datasetData.datasetName,
         originalFileName: datasetData.originalFileName,
         fileType: datasetData.fileType,
         totalRows: datasetData.totalRows || 0,
-        columns: datasetData.columns || []
+        columns: datasetData.columns || [],
+        mapping: datasetData.mapping || {}
     });
-
 
     return await dataset.save();
 };
@@ -22,7 +22,9 @@ const insertRowsInBulk = async (datasetId, rows) => {
         insertOne: {
             document: {
                 datasetId,
-                data: row
+                data: row.data,
+                isValid: row.isValid,
+                errors: row.errors
             }
         }
     }));
