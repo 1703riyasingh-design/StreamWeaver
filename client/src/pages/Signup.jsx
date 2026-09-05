@@ -17,13 +17,42 @@ function isStrongPassword(password) {
   return checks.length && checks.letter && checks.number && checks.special;
 }
 
+function generateUserId(name, email) {
+  const cleanName = String(name || "").trim();
+  const baseName = cleanName
+    ? cleanName.split(/\s+/)[0]
+    : (email || "User").split("@")[0].split(/\s+/)[0];
+  const safeName = (baseName || "User").replace(/[^a-zA-Z]/g, "") || "User";
+  const prefix = safeName.charAt(0).toUpperCase() + safeName.slice(1);
+  const suffix = String(Math.floor(Math.random() * 9000) + 1000);
+  return `${prefix}${suffix}`;
+}
+
 function Signup() {
   const navigate = useNavigate();
 
+  const [name, setName] = useState("");
+  const [city, setCity] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [nameError, setNameError] = useState("");
+  const [cityError, setCityError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
+
+  function validateName(value) {
+    if (!value.trim()) {
+      return "Name is required.";
+    }
+    return "";
+  }
+
+  function validateCity(value) {
+    if (!value.trim()) {
+      return "City is required.";
+    }
+    return "";
+  }
 
   function validateEmail(value) {
     if (!value.trim()) {
@@ -48,13 +77,17 @@ function Signup() {
   const handleSignup = (e) => {
     e.preventDefault();
 
+    const nameMsg = validateName(name);
+    const cityMsg = validateCity(city);
     const emailMsg = validateEmail(email);
     const passwordMsg = validatePassword(password);
 
+    setNameError(nameMsg);
+    setCityError(cityMsg);
     setEmailError(emailMsg);
     setPasswordError(passwordMsg);
 
-    if (emailMsg || passwordMsg) {
+    if (nameMsg || cityMsg || emailMsg || passwordMsg) {
       return;
     }
 
@@ -69,9 +102,17 @@ function Signup() {
       return;
     }
 
+    const generatedUserId = generateUserId(name, normalizedEmail);
+
     const updatedUsers = [
       ...storedUsers,
-      { email: normalizedEmail, password },
+      {
+        userId: generatedUserId,
+        name: name.trim(),
+        city: city.trim(),
+        email: normalizedEmail,
+        password,
+      },
     ];
 
     localStorage.setItem("users", JSON.stringify(updatedUsers));
@@ -91,6 +132,34 @@ function Signup() {
         <p>Sign up to continue</p>
 
         <form onSubmit={handleSignup} noValidate>
+          <label>Name</label>
+          <input
+            type="text"
+            placeholder="Enter your full name"
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              if (nameError) setNameError(validateName(e.target.value));
+            }}
+            className={nameError ? "input-error" : ""}
+            required
+          />
+          {nameError && <p className="field-error">{nameError}</p>}
+
+          <label>City</label>
+          <input
+            type="text"
+            placeholder="Enter your city"
+            value={city}
+            onChange={(e) => {
+              setCity(e.target.value);
+              if (cityError) setCityError(validateCity(e.target.value));
+            }}
+            className={cityError ? "input-error" : ""}
+            required
+          />
+          {cityError && <p className="field-error">{cityError}</p>}
+
           <label>Email</label>
           <input
             type="email"
