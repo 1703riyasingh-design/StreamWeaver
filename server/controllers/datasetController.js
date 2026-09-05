@@ -150,10 +150,53 @@ const deleteDataset = async (req, res) => {
         });
     }
 };
+// GET dataset validation summary
+const getValidationSummary = async (req, res) => {
+    try {
+        const datasetId = req.params.id;
+
+        const totalRows = await DatasetRow.countDocuments({
+            datasetId
+        });
+
+        const validRows = await DatasetRow.countDocuments({
+            datasetId,
+            isValid: true
+        });
+
+        const invalidRows = await DatasetRow.countDocuments({
+            datasetId,
+            isValid: false
+        });
+
+        return res.status(200).json({
+            success: true,
+
+            summary: {
+                totalRows,
+                validRows,
+                invalidRows
+            }
+        });
+
+    } catch (error) {
+        console.error(
+            "Validation Summary Error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch validation summary",
+            error: error.message
+        });
+    }
+};
 
 module.exports = {
     getAllDatasets,
     getDatasetById,
     getDatasetRows,
+    getValidationSummary,
     deleteDataset
 };
