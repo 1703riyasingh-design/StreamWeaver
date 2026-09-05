@@ -74,23 +74,36 @@ const getDatasetRows = async (req, res) => {
             1000
         );
 
+
+        const status = req.query.status;
+
+        const filter = {
+            datasetId
+        };
+
+        if (status === "valid") {
+            filter.isValid = true;
+        } else if (status === "invalid") {
+            filter.isValid = false;
+        }
+
         const skip = (page - 1) * limit;
 
-        const [rows, totalRows] = await Promise.all([
-            DatasetRow.find({
-                datasetId
-            })
+         const [rows, totalRows] = await Promise.all([
+            DatasetRow.find(filter)
                 .skip(skip)
                 .limit(limit)
                 .lean(),
 
-            DatasetRow.countDocuments({
-                datasetId
-            })
+            DatasetRow.countDocuments(filter)
         ]);
 
         return res.status(200).json({
             success: true,
+
+              filter: {
+                status: status || "all"
+            },
 
             pagination: {
                 page,
