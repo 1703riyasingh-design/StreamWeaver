@@ -10,7 +10,9 @@ const applyMapping = require("../utils/applyMapping");
 const validateRow = require("../services/validateRow");
 const validateMapping = require("../utils/validateMapping");
 const generateAutoMapping = require("../utils/autoMapping");
+
 const parseJSONFile = require("../utils/jsonParser");
+const parseXLSXFile = require("../utils/xlsxParser");
 
 const {
   createDataset,
@@ -29,6 +31,7 @@ const getCSVHeaders = async (filePath) => {
     });
 
     let firstLine = "";
+    let resolved = false;
 
     stream.on("data", (chunk) => {
       firstLine += chunk;
@@ -36,7 +39,12 @@ const getCSVHeaders = async (filePath) => {
       const newlineIndex =
         firstLine.indexOf("\n");
 
-      if (newlineIndex !== -1) {
+      if (
+        newlineIndex !== -1 &&
+        !resolved
+      ) {
+        resolved = true;
+
         stream.destroy();
 
         const headerLine =
@@ -59,7 +67,12 @@ const getCSVHeaders = async (filePath) => {
     stream.on("error", reject);
 
     stream.on("close", () => {
-      if (!firstLine.includes("\n")) {
+      if (
+        !resolved &&
+        !firstLine.includes("\n")
+      ) {
+        resolved = true;
+
         const headers =
           firstLine
             .replace(/\r$/, "")
@@ -83,11 +96,29 @@ const getCSVHeaders = async (filePath) => {
 const uploadFile = async (req, res) => {
   let filePath = null;
 
+  res.on("finish", () => {
+    console.log(
+      "Response finished with status:",
+      res.statusCode
+    );
+  });
+
+
   try {
 
-    // ------------------------------------
+    console.log("=================================");
+    console.log("UPLOAD REQUEST RECEIVED");
+
+    if (req.file) {
+      console.log("File name:", req.file.originalname);
+      console.log("File path:", req.file.path);
+    }
+
+    console.log("=================================");
+
+    // ====================================
     // CHECK FILE
-    // ------------------------------------
+    // ====================================
 
     if (!req.file) {
       return res.status(400).json({
@@ -104,54 +135,77 @@ const uploadFile = async (req, res) => {
         .toLowerCase();
 
 
-    // ------------------------------------
+    // ====================================
     // CHECK FILE TYPE
-    // ------------------------------------
+    // ====================================
 
     if (
       fileExtension !== ".csv" &&
-      fileExtension !== ".json"
+      fileExtension !== ".json" &&
+      fileExtension !== ".xlsx"
     ) {
       return res.status(400).json({
         success: false,
         message:
-          "Only CSV and JSON files are supported.",
+          "Only CSV, JSON and XLSX files are supported.",
       });
     }
 
 
-    // ------------------------------------
+    // ====================================
     // VARIABLES
-    // ------------------------------------
+    // ====================================
 
     let originalColumns = [];
     let jsonRows = [];
+    let xlsxRows = [];
     let mapping = {};
 
 
     // ====================================
-    // GET COLUMNS FROM CSV
+    // READ CSV HEADERS
     // ====================================
 
-    if (fileExtension === ".csv") {
+    if (
+      fileExtension === ".csv"
+    ) {
       originalColumns =
         await getCSVHeaders(filePath);
     }
 
 
     // ====================================
-    // GET ROWS + COLUMNS FROM JSON
+    // READ JSON
     // ====================================
 
-    if (fileExtension === ".json") {
-      const parsedJSON =
-        await parseJSONFile(filePath);
+if (
+  fileExtension === ".json"
+) {
 
-      jsonRows =
-        parsedJSON.rows;
+  console.log("Starting JSON parsing...");
 
-      originalColumns =
-        parsedJSON.columns;
+  const parsedJSON =
+    await parseJSONFile(
+      filePath
+    );
+
+  console.log("JSON parsed successfully");
+
+  jsonRows =
+    parsedJSON.rows;
+
+  originalColumns =
+    parsedJSON.columns;
+
+  console.log(
+    "JSON rows found:",
+    jsonRows.length
+  );
+
+  console.log(
+    "JSON columns:",
+    originalColumns
+  );
 
       if (
         !Array.isArray(jsonRows) ||
@@ -165,15 +219,73 @@ const uploadFile = async (req, res) => {
       }
     }
 
+// ====================================
+// READ XLSX
+// ====================================
+
+if (
+  fileExtension === ".xlsx"
+) {
+
+  console.log(
+    "Starting XLSX parsing..."
+  );
+
+  const parsedXLSX =
+    await parseXLSXFile(
+      filePath
+    );
+
+  console.log(
+    "XLSX parsed successfully"
+  );
+
+  xlsxRows =
+    parsedXLSX.rows;
+
+  originalColumns =
+    parsedXLSX.columns;
+
+  console.log(
+    "XLSX rows found:",
+    xlsxRows.length
+  );
+
+  console.log(
+    "XLSX columns:",
+    originalColumns
+  );
+
+  if (
+    !Array.isArray(xlsxRows) ||
+    xlsxRows.length === 0
+  ) {
+    return res.status(400).json({
+      success: false,
+      message:
+        "XLSX file is empty or invalid.",
+    });
+  }
+}
+
+
+
+
+
+
 
     // ====================================
     // GET MANUAL MAPPING
     // ====================================
 
-    if (req.body.mapping) {
+    if (
+      req.body.mapping
+    ) {
       try {
         mapping =
-          JSON.parse(req.body.mapping);
+          JSON.parse(
+            req.body.mapping
+          );
       } catch (error) {
         return res.status(400).json({
           success: false,
@@ -205,7 +317,9 @@ const uploadFile = async (req, res) => {
     const mappingValidation =
       validateMapping(mapping);
 
-    if (!mappingValidation.isValid) {
+    if (
+      !mappingValidation.isValid
+    ) {
       return res.status(400).json({
         success: false,
         message:
@@ -230,7 +344,9 @@ const uploadFile = async (req, res) => {
         fileType:
           fileExtension === ".csv"
             ? "csv"
-            : "json",
+            : fileExtension === ".json"
+            ? "json"
+            : "xlsx",
 
         totalRows: 0,
         validRows: 0,
@@ -266,6 +382,7 @@ const uploadFile = async (req, res) => {
 
 
       // Apply mapping
+
       const mappedRow =
         Object.keys(mapping).length > 0
           ? applyMapping(
@@ -276,18 +393,24 @@ const uploadFile = async (req, res) => {
 
 
       // Validate row
+
       const validation =
-        validateRow(mappedRow);
+        validateRow(
+          mappedRow
+        );
 
 
-      if (validation.isValid) {
+      if (
+        validation.isValid
+      ) {
         validRows++;
       } else {
         invalidRows++;
       }
 
 
-      // Preview first 100 rows
+      // Preview
+
       if (
         previewRows.length < 100
       ) {
@@ -302,6 +425,7 @@ const uploadFile = async (req, res) => {
 
 
       // Add to batch
+
       batch.push({
         data: mappedRow,
         isValid:
@@ -312,6 +436,7 @@ const uploadFile = async (req, res) => {
 
 
       // Bulk insert
+
       if (
         batch.length >=
         BATCH_SIZE
@@ -330,17 +455,50 @@ const uploadFile = async (req, res) => {
     // PROCESS JSON
     // ====================================
 
-    if (
-      fileExtension === ".json"
-    ) {
+if (
+  fileExtension === ".json"
+) {
 
-      for (
-        const row of jsonRows
-      ) {
-        await processRow(row);
-      }
-    }
+  console.log(
+    "Starting JSON row processing..."
+  );
 
+  for (
+    const row of jsonRows
+  ) {
+    await processRow(
+      row
+    );
+  }
+
+  console.log(
+    "JSON row processing completed"
+  );
+}
+
+
+    // ====================================
+    // PROCESS XLSX
+    // ====================================
+
+if (
+  fileExtension === ".xlsx"
+) {
+
+  console.log(
+    "Starting XLSX row processing..."
+  );
+
+  for (
+    const row of xlsxRows
+  ) {
+    await processRow(row);
+  }
+
+  console.log(
+    "XLSX row processing completed"
+  );
+}
 
     // ====================================
     // PROCESS CSV
@@ -427,7 +585,7 @@ const uploadFile = async (req, res) => {
 
 
     // ====================================
-    // UPDATE DATASET METADATA
+    // UPDATE DATASET
     // ====================================
 
     dataset.totalRows =
@@ -446,13 +604,28 @@ const uploadFile = async (req, res) => {
       mapping;
 
 
-    await dataset.save();
+console.log(
+  "Saving dataset metadata..."
+);
+
+await dataset.save();
+
+console.log(
+  "Dataset metadata saved successfully"
+);
 
 
     console.log(
       `${fileExtension.toUpperCase()} processing completed: ${totalRows} rows`
     );
 
+console.log(
+  "Preparing success response..."
+);
+
+console.log(
+  "Sending success response to frontend..."
+);
 
     // ====================================
     // SUCCESS RESPONSE
@@ -496,7 +669,6 @@ const uploadFile = async (req, res) => {
       },
     });
 
-
   } catch (error) {
 
     console.error(
@@ -504,7 +676,9 @@ const uploadFile = async (req, res) => {
       error
     );
 
-    if (!res.headersSent) {
+    if (
+      !res.headersSent
+    ) {
       return res.status(500).json({
         success: false,
 
@@ -518,11 +692,9 @@ const uploadFile = async (req, res) => {
 
   } finally {
 
-    // ------------------------------------
-    // DELETE TEMP FILE
-    // ------------------------------------
-
-    if (filePath) {
+    if (
+      filePath
+    ) {
       fs.unlink(
         filePath,
         (error) => {
