@@ -4,7 +4,21 @@ const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
 
+const http = require("http");
+const { Server } = require("socket.io");
+
 const app = express();
+
+const httpServer = http.createServer(app);
+
+const io = new Server(httpServer, {
+  cors: {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST"],
+  },
+});
+
+
 
 const uploadRoutes = require("./routes/uploadRoutes");
 const datasetRoutes = require("./routes/datasetRoutes");
@@ -15,6 +29,14 @@ const upload = multer({
 
 app.use(cors());
 app.use(express.json());
+
+io.on("connection", (socket) => {
+  console.log("Socket connected:", socket.id);
+
+  socket.on("disconnect", () => {
+    console.log("Socket disconnected:", socket.id);
+  });
+});
 
 // Existing routes
 app.use("/api", uploadRoutes);
@@ -67,6 +89,6 @@ const PORT = 5000;
 
 connectDB();
 
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
