@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import * as XLSX from "xlsx";
 import "./UploadDataset.css";
 
 const REQUIRED_FIELDS = [
-  { key: "userId", label: "User ID" },
+  { key: "id", label: "ID" },
   { key: "name", label: "Name" },
   { key: "city", label: "City" },
   { key: "email", label: "Email" },
@@ -21,84 +22,59 @@ function buildDefaultMapping(columns = []) {
     String(column).trim()
   );
 
-  return REQUIRED_FIELDS.reduce(
-    (mapping, field) => {
-      const keywords = {
-        userId: [
-          "userid",
-          "user_id",
-          "id",
-        ],
-        name: [
-          "name",
-          "full name",
-          "fullname",
-        ],
-        city: [
-          "city",
-          "location",
-        ],
-        email: [
-          "email",
-        ],
-      }[field.key] || [field.label];
+  return REQUIRED_FIELDS.reduce((mapping, field) => {
+    const keywords = {
+  id: [
+    "id",
+    "userid",
+    "user_id",
+  ],
+      name: ["name", "full name", "fullname"],
+      city: ["city", "location"],
+      email: ["email"],
+    }[field.key] || [field.label];
 
-      const match = normalizedColumns.find(
-        (column) => {
-          const normalizedColumn =
-            normalizeColumnName(column);
+    const match = normalizedColumns.find((column) => {
+      const normalizedColumn = normalizeColumnName(column);
 
-          return keywords.some(
-            (keyword) =>
-              normalizedColumn ===
-                normalizeColumnName(keyword) ||
-              normalizedColumn.includes(
-                normalizeColumnName(keyword)
-              )
-          );
-        }
+      return keywords.some(
+        (keyword) =>
+          normalizedColumn === normalizeColumnName(keyword) ||
+          normalizedColumn.includes(normalizeColumnName(keyword))
       );
+    });
 
-      mapping[field.key] = match || "";
+    mapping[field.key] = match || "";
 
-      return mapping;
-    },
-    {}
-  );
+    return mapping;
+  }, {});
 }
 
 function ColumnMappingPanel({
-  csvColumns,
+  datasetColumns,
   fieldMapping,
   onMappingChange,
 }) {
   return (
     <div className="mapping-panel">
-
       <div className="mapping-header">
         <h3>Column Mapping</h3>
         <span>Map your dataset columns</span>
       </div>
 
       <div className="mapping-grid">
-
         {REQUIRED_FIELDS.map((field) => (
           <div
             className="mapping-field"
             key={field.key}
           >
-
-            <label
-              htmlFor={`mapping-${field.key}`}
-            >
+            <label htmlFor={`mapping-${field.key}`}>
               {field.label}
             </label>
 
             <select
               id={`mapping-${field.key}`}
-              value={
-                fieldMapping[field.key] || ""
-              }
+              value={fieldMapping[field.key] || ""}
               onChange={(event) =>
                 onMappingChange(
                   field.key,
@@ -106,12 +82,11 @@ function ColumnMappingPanel({
                 )
               }
             >
-
               <option value="">
                 Select dataset column
               </option>
 
-              {csvColumns.map((column) => (
+              {datasetColumns.map((column) => (
                 <option
                   key={column}
                   value={column}
@@ -119,37 +94,27 @@ function ColumnMappingPanel({
                   {column}
                 </option>
               ))}
-
             </select>
-
           </div>
         ))}
-
       </div>
 
       <div className="mapping-summary">
-
         <h4>Selected Mapping</h4>
 
         <ul>
           {REQUIRED_FIELDS.map((field) => (
             <li key={field.key}>
-
-              <strong>
-                {field.label}
-              </strong>
+              <strong>{field.label}</strong>
 
               {" → "}
 
               {fieldMapping[field.key] ||
                 "Not selected"}
-
             </li>
           ))}
         </ul>
-
       </div>
-
     </div>
   );
 }
@@ -175,7 +140,6 @@ function UploadDataset() {
 
   const navigate = useNavigate();
 
-
   const handleMappingChange = (
     fieldKey,
     selectedColumn
@@ -186,10 +150,7 @@ function UploadDataset() {
     }));
   };
 
-
-  const handleFileChange = async (
-    event
-  ) => {
+  const handleFileChange = async (event) => {
     const selectedFile =
       event.target.files[0];
 
@@ -198,50 +159,43 @@ function UploadDataset() {
     }
 
     setErrorMessage("");
+    setColumns([]);
+    setMapping({});
 
     const fileName =
       selectedFile.name.toLowerCase();
 
-
-    // Check supported file types
     if (
       !fileName.endsWith(".csv") &&
-      !fileName.endsWith(".json")
+      !fileName.endsWith(".json") &&
+      !fileName.endsWith(".xlsx")
     ) {
       setErrorMessage(
-        "Currently only CSV and JSON files are supported."
+        "Only CSV, JSON and XLSX files are supported."
       );
 
       setFile(null);
-      setColumns([]);
-      setMapping({});
 
       return;
     }
 
-
     try {
-      const text =
-        await selectedFile.text();
-
       let extractedColumns = [];
-
 
       // =========================
       // CSV COLUMN EXTRACTION
       // =========================
-      if (
-        fileName.endsWith(".csv")
-      ) {
+      if (fileName.endsWith(".csv")) {
+        const text =
+          await selectedFile.text();
+
         const firstLine =
           text.split(/\r?\n/)[0];
 
         if (!firstLine) {
-          setErrorMessage(
+          throw new Error(
             "CSV file is empty or invalid."
           );
-
-          return;
         }
 
         extractedColumns =
@@ -253,36 +207,26 @@ function UploadDataset() {
             .filter(Boolean);
       }
 
-
       // =========================
       // JSON COLUMN EXTRACTION
       // =========================
-      if (
-        fileName.endsWith(".json")
-      ) {
+      else if (fileName.endsWith(".json")) {
+        const text =
+          await selectedFile.text();
+
         const jsonData =
           JSON.parse(text);
 
         let rows = [];
 
-
-        // JSON Array
-        if (
-          Array.isArray(jsonData)
-        ) {
+        if (Array.isArray(jsonData)) {
           rows = jsonData;
-        }
-
-
-        // JSON Object
-        else if (
+        } else if (
           jsonData &&
           typeof jsonData === "object"
         ) {
           const nestedArray =
-            Object.values(
-              jsonData
-            ).find(
+            Object.values(jsonData).find(
               (value) =>
                 Array.isArray(value)
             );
@@ -292,50 +236,94 @@ function UploadDataset() {
             [jsonData];
         }
 
-
-        if (
-          rows.length === 0
-        ) {
-          setErrorMessage(
+        if (rows.length === 0) {
+          throw new Error(
             "JSON file is empty or does not contain data."
           );
-
-          return;
         }
 
-
-        extractedColumns =
-          Object.keys(
-            rows[0] || {}
-          );
+        extractedColumns = [
+          ...new Set(
+            rows.flatMap((row) =>
+              row &&
+              typeof row === "object" &&
+              !Array.isArray(row)
+                ? Object.keys(row)
+                : []
+            )
+          ),
+        ];
       }
 
+      // =========================
+      // XLSX COLUMN EXTRACTION
+      // =========================
+      else if (fileName.endsWith(".xlsx")) {
+        const arrayBuffer =
+          await selectedFile.arrayBuffer();
 
-      // Check columns
+        const workbook =
+          XLSX.read(
+            arrayBuffer,
+            {
+              type: "array",
+            }
+          );
+
+        const firstSheetName =
+          workbook.SheetNames[0];
+
+        if (!firstSheetName) {
+          throw new Error(
+            "XLSX file does not contain any sheet."
+          );
+        }
+
+        const worksheet =
+          workbook.Sheets[
+            firstSheetName
+          ];
+
+        const rows =
+          XLSX.utils.sheet_to_json(
+            worksheet,
+            {
+              header: 1,
+              defval: "",
+            }
+          );
+
+        if (
+          !rows.length ||
+          !rows[0].length
+        ) {
+          throw new Error(
+            "XLSX file is empty or invalid."
+          );
+        }
+
+        extractedColumns =
+          rows[0]
+            .map((column) =>
+              String(column).trim()
+            )
+            .filter(Boolean);
+      }
+
       if (
         extractedColumns.length === 0
       ) {
-        setErrorMessage(
+        throw new Error(
           "No columns found in the selected file."
         );
-
-        return;
       }
 
+      setFile(selectedFile);
 
-      // Save file
-      setFile(
-        selectedFile
-      );
-
-
-      // Save detected columns
       setColumns(
         extractedColumns
       );
 
-
-      // Auto mapping
       const defaultMapping =
         buildDefaultMapping(
           extractedColumns
@@ -344,7 +332,6 @@ function UploadDataset() {
       setMapping(
         defaultMapping
       );
-
 
     } catch (error) {
       console.error(
@@ -356,30 +343,17 @@ function UploadDataset() {
       setColumns([]);
       setMapping({});
 
-
-      if (
-        fileName.endsWith(".json")
-      ) {
-        setErrorMessage(
-          "Invalid JSON file. Please check the JSON format."
-        );
-      } else {
-        setErrorMessage(
-          "Failed to read CSV file."
-        );
-      }
+      setErrorMessage(
+        error.message ||
+          "Failed to read the selected file."
+      );
     }
   };
-
 
   const handleUpload = async () => {
     setErrorMessage("");
 
-
-    // Dataset name validation
-    if (
-      !datasetName.trim()
-    ) {
+    if (!datasetName.trim()) {
       setErrorMessage(
         "Please enter a dataset name."
       );
@@ -387,23 +361,15 @@ function UploadDataset() {
       return;
     }
 
-
-    // File validation
-    if (
-      !file
-    ) {
+    if (!file) {
       setErrorMessage(
-        "Please select a CSV or JSON file."
+        "Please select a CSV, JSON or XLSX file."
       );
 
       return;
     }
 
-
-    // Column validation
-    if (
-      columns.length === 0
-    ) {
+    if (columns.length === 0) {
       setErrorMessage(
         "No columns found in the selected file."
       );
@@ -411,12 +377,9 @@ function UploadDataset() {
       return;
     }
 
-
-    // Mapping validation
     const mappingValues =
       Object.values(mapping)
         .filter(Boolean);
-
 
     if (
       mappingValues.length === 0
@@ -428,15 +391,12 @@ function UploadDataset() {
       return;
     }
 
-
-    // Check duplicate mappings
     const uniqueValues =
       [
         ...new Set(
           mappingValues
         ),
       ];
-
 
     if (
       uniqueValues.length !==
@@ -449,72 +409,69 @@ function UploadDataset() {
       return;
     }
 
-
     setIsUploading(true);
-
 
     try {
       const formData =
         new FormData();
-
 
       formData.append(
         "file",
         file
       );
 
-
       formData.append(
         "datasetName",
         datasetName.trim()
       );
 
+      const backendMapping = {};
 
-      formData.append(
-        "mapping",
-        JSON.stringify(mapping)
-      );
+Object.entries(mapping).forEach(
+  ([targetField, sourceColumn]) => {
+    if (sourceColumn) {
+      backendMapping[sourceColumn] =
+        targetField;
+    }
+  }
+);
 
+formData.append(
+  "mapping",
+  JSON.stringify(backendMapping)
+);
 
-      const response =
-        await fetch(
-          "http://localhost:5000/api/upload",
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
-
+const response =
+  await fetch(
+    "http://localhost:5000/api/upload",
+    {
+      method: "POST",
+      body: formData,
+    }
+  );
 
       const result =
         await response.json();
 
-
-      if (
-        !response.ok
-      ) {
+      if (!response.ok) {
         throw new Error(
           result.message ||
           "Upload failed"
         );
       }
 
-
       console.log(
         "Upload successful:",
         result
       );
 
-
       alert(
         `Dataset "${result.dataset.datasetName}" uploaded successfully!`
       );
 
-
       navigate(
         "/datasets"
       );
-
 
     } catch (error) {
       console.error(
@@ -522,28 +479,22 @@ function UploadDataset() {
         error
       );
 
-
       setErrorMessage(
         error.message ||
-        "Upload failed. Please try again."
+          "Upload failed. Please try again."
       );
-
 
     } finally {
       setIsUploading(false);
     }
   };
 
-
   return (
     <div className="upload-page">
-
       <div className="upload-shell">
 
         <div className="upload-header">
-
           <div className="upload-title-wrap">
-
             <div className="upload-icon">
               📦
             </div>
@@ -551,35 +502,24 @@ function UploadDataset() {
             <h1>
               Upload Dataset
             </h1>
-
           </div>
-
 
           <span className="upload-status">
             Ready
           </span>
-
         </div>
-
 
         <div className="upload-body">
 
           <p className="upload-description">
-            Upload your CSV or JSON dataset,
-            map columns, and process
-            the data.
+            Upload your CSV, JSON or XLSX dataset,
+            map columns, and process the data.
           </p>
-
 
           <div className="upload-grid">
 
-
-            {/* Dataset Name */}
             <div className="upload-field">
-
-              <label
-                htmlFor="dataset-name"
-              >
+              <label htmlFor="dataset-name">
                 Dataset Name
               </label>
 
@@ -595,57 +535,40 @@ function UploadDataset() {
                   )
                 }
               />
-
             </div>
 
-
-            {/* File Upload */}
             <div className="upload-field">
-
-              <label
-                htmlFor="dataset-file"
-              >
+              <label htmlFor="dataset-file">
                 Choose Dataset
               </label>
 
-
               <div className="upload-file-wrap">
-
                 <input
                   id="dataset-file"
                   className="upload-file-input"
                   type="file"
-                  accept=".csv,.json"
+                  accept=".csv,.json,.xlsx"
                   onChange={
                     handleFileChange
                   }
                 />
-
               </div>
-
             </div>
 
           </div>
 
-
-          {/* Selected File */}
           <div className="upload-meta">
-
             {file && (
               <span className="file-chip">
                 Selected: {file.name}
               </span>
             )}
 
-
             <span className="file-format">
-              CSV, JSON
+              CSV, JSON, XLSX
             </span>
-
           </div>
 
-
-          {/* Error */}
           {errorMessage && (
             <div
               className="upload-error"
@@ -655,11 +578,9 @@ function UploadDataset() {
             </div>
           )}
 
-
-          {/* Column Mapping */}
           {columns.length > 0 && (
             <ColumnMappingPanel
-              csvColumns={columns}
+              datasetColumns={columns}
               fieldMapping={mapping}
               onMappingChange={
                 handleMappingChange
@@ -667,26 +588,17 @@ function UploadDataset() {
             />
           )}
 
-
-          {/* Upload Progress */}
           {isUploading && (
             <div className="upload-progress">
-
-              <span
-                className="spinner"
-              />
+              <span className="spinner" />
 
               <span>
                 Uploading and processing...
               </span>
-
             </div>
           )}
 
-
-          {/* Upload Button */}
           <div className="upload-actions">
-
             <button
               type="button"
               className="upload-button"
@@ -697,19 +609,14 @@ function UploadDataset() {
                 isUploading
               }
             >
-
               {isUploading
                 ? "Processing..."
                 : "Upload Dataset"}
-
             </button>
-
           </div>
 
         </div>
-
       </div>
-
     </div>
   );
 }
