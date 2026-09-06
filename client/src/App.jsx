@@ -3,11 +3,13 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import UploadDataset from "./pages/UploadDataset";
+import DatasetList from "./pages/DatasetList";
 import DashboardLayout from "./components/DashboardLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import SettingsPage from "./pages/SettingsPage";
 import SecuritySettings from "./pages/SecuritySettings";
+import DatasetDetails from "./pages/DatasetDetails";
 import NotificationSettings from "./pages/NotificationSettings";
 
 function App() {
@@ -105,6 +107,16 @@ function App() {
             <Route
               path="/upload-dataset"
               element={<UploadDataset />}
+            />
+
+            <Route
+              path="/datasets"
+              element={<DatasetList />}
+            />
+
+            <Route
+                path="/datasets/:id"
+                element={<DatasetDetails />}
             />
 
           </Route>

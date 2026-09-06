@@ -7,11 +7,78 @@ const CSVParser = require("../streams/csvParser");
 const DataTransformStream = require("../streams/transformStream");
 const applyMapping = require("../utils/applyMapping");
 const validateRow = require("../services/validateRow");
+const validateMapping =
+    require("../utils/validateMapping");
+const generateAutoMapping =
+  require("../utils/autoMapping");
 
 const {
     createDataset,
     insertRowsInBulk
 } = require("../services/datasetService");
+
+
+const getCSVHeaders = async (filePath) => {
+
+    return new Promise((resolve, reject) => {
+
+        const stream = fs.createReadStream(filePath, {
+            encoding: "utf8"
+        });
+
+        let firstLine = "";
+
+        stream.on("data", (chunk) => {
+
+            firstLine += chunk;
+
+            const newlineIndex =
+                firstLine.indexOf("\n");
+
+            if (newlineIndex !== -1) {
+
+                stream.destroy();
+
+                const headerLine =
+                    firstLine
+                        .slice(0, newlineIndex)
+                        .replace(/\r$/, "");
+
+                const headers =
+                    headerLine
+                        .split(",")
+                        .map((header) =>
+                            header.trim()
+                        );
+
+                resolve(headers);
+            }
+
+        });
+
+        stream.on("error", reject);
+
+        stream.on("close", () => {
+
+            if (!firstLine.includes("\n")) {
+
+                const headers =
+                    firstLine
+                        .replace(/\r$/, "")
+                        .split(",")
+                        .map((header) =>
+                            header.trim()
+                        );
+
+                resolve(headers);
+
+            }
+
+        });
+
+    });
+
+};
 
 const uploadFile = async (req, res) => {
     let filePath = null;
@@ -40,19 +107,60 @@ const uploadFile = async (req, res) => {
             });
         }
 
-           let mapping = {};
+let mapping = {};
 
-        if (req.body.mapping) {
-            try {
-                mapping = JSON.parse(req.body.mapping);
-            } catch (error) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Invalid column mapping format"
-                });
-            }
-        }
+// Get CSV headers first
+const originalColumns =
+    await getCSVHeaders(filePath);
 
+
+// If frontend sends manual mapping,
+// use that mapping
+if (req.body.mapping) {
+
+    try {
+
+        mapping =
+            JSON.parse(req.body.mapping);
+
+    } catch (error) {
+
+        return res.status(400).json({
+            success: false,
+            message:
+                "Invalid column mapping format"
+        });
+
+    }
+
+}
+
+
+// If no mapping is provided,
+// generate automatic mapping
+if (Object.keys(mapping).length === 0) {
+
+    mapping =
+        generateAutoMapping(
+            originalColumns
+        );
+
+}
+
+
+// Validate final mapping
+const mappingValidation =
+    validateMapping(mapping);
+
+if (!mappingValidation.isValid) {
+
+    return res.status(400).json({
+        success: false,
+        message:
+            mappingValidation.message
+    });
+
+}
 
           const dataset = await createDataset({
             datasetName: req.body.datasetName ||
@@ -60,6 +168,8 @@ const uploadFile = async (req, res) => {
             originalFileName: req.file.originalname,
             fileType: "csv",
             totalRows: 0,
+            validRows: 0,
+            invalidRows: 0,
             columns: []
         });
         
@@ -78,6 +188,8 @@ const uploadFile = async (req, res) => {
         const BATCH_SIZE = 5000;
 
         let totalRows = 0;
+        let validRows = 0;
+        let invalidRows = 0;
 
         let batch = [];
 
@@ -100,6 +212,12 @@ const uploadFile = async (req, res) => {
                             : row;
 
                             const validation = validateRow(mappedRow);
+
+                            if (validation.isValid) {
+                                    validRows++;
+                                } else {
+                                    invalidRows++;
+                                }
 
                     // Keep first 100 rows for preview
                    if (previewRows.length < 100) {
@@ -163,8 +281,8 @@ const uploadFile = async (req, res) => {
             databaseWriter
         );
 
-          const originalColumns =
-            parser.headers || [];
+        //   const originalColumns =
+        //     parser.headers || [];
 
 
         const mappedColumns =
@@ -183,6 +301,8 @@ const uploadFile = async (req, res) => {
 
         // Update dataset metadata
         dataset.totalRows = totalRows;
+        dataset.validRows = validRows;
+        dataset.invalidRows = invalidRows;
         dataset.columns = mappedColumns;
         dataset.mapping =
             mapping;
@@ -204,6 +324,8 @@ const uploadFile = async (req, res) => {
                 fileType: "csv",
                 fileSize: req.file.size,
                 totalRows,
+                validRows,
+                invalidRows,
                 columns:  mappedColumns,
                 mapping,
                 preview: previewRows

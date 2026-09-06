@@ -7,6 +7,10 @@ const createDataset = async (datasetData) => {
         originalFileName: datasetData.originalFileName,
         fileType: datasetData.fileType,
         totalRows: datasetData.totalRows || 0,
+         validRows: datasetData.validRows || 0,
+
+        invalidRows: datasetData.invalidRows || 0,
+
         columns: datasetData.columns || [],
         mapping: datasetData.mapping || {}
     });
