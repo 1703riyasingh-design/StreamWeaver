@@ -5,13 +5,19 @@ const {
     getDatasetById,
     getDatasetRows,
     getValidationSummary,
-    deleteDataset
+    deleteDataset,
+    getDashboardStats
 } = require("../controllers/datasetController");
 
 const router = express.Router();
 
 // Get all datasets
 router.get("/", getAllDatasets);
+
+router.get(
+    "/dashboard/stats",
+    getDashboardStats
+);
 
 // Get dataset rows
 router.get("/:id/rows", getDatasetRows);

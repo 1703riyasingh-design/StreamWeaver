@@ -1,0 +1,132 @@
+.dataset-list-page {
+  padding: 32px;
+  min-height: 100vh;
+  color: #e5e7eb;
+}
+
+.dataset-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.dataset-list-header h1 {
+  margin: 0;
+  font-size: 32px;
+}
+
+.dataset-list-header p {
+  margin-top: 8px;
+  color: #94a3b8;
+}
+
+.dataset-list-header button {
+  border: none;
+  background: #2563eb;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.dataset-list-header button:hover {
+  background: #1d4ed8;
+}
+
+/* Dataset cards */
+
+.dataset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.dataset-card {
+  background: #172235;
+  border: 1px solid #2b3b52;
+  border-radius: 14px;
+  padding: 22px;
+  transition: transform 0.2s ease;
+}
+
+.dataset-card:hover {
+  transform: translateY(-3px);
+}
+
+.dataset-card h3 {
+  margin-top: 0;
+  margin-bottom: 18px;
+  font-size: 20px;
+  color: #e5e7eb;
+}
+
+.dataset-card p {
+  margin: 10px 0;
+  color: #b8c4d4;
+  font-size: 14px;
+}
+
+.dataset-card strong {
+  color: #e5e7eb;
+}
+
+/* Buttons */
+
+.dataset-card-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.view-dataset-button,
+.delete-dataset-button {
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.view-dataset-button {
+  background: #2563eb;
+  color: white;
+}
+
+.view-dataset-button:hover {
+  background: #1d4ed8;
+}
+
+.delete-dataset-button {
+  background: #dc2626;
+  color: white;
+}
+
+.delete-dataset-button:hover {
+  background: #b91c1c;
+}
+
+/* Responsive */
+
+@media (max-width: 700px) {
+  .dataset-list-page {
+    padding: 20px;
+  }
+
+  .dataset-list-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .dataset-card-actions {
+    flex-direction: column;
+  }
+
+  .view-dataset-button,
+  .delete-dataset-button {
+    width: 100%;
+  }
+}

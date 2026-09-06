@@ -4,11 +4,13 @@ import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import UploadDataset from "./pages/UploadDataset";
 import DatasetPreview from "./pages/DatasetPreview";
+import DatasetList from "./pages/DatasetList";
 import DashboardLayout from "./components/DashboardLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import SettingsPage from "./pages/SettingsPage";
 import SecuritySettings from "./pages/SecuritySettings";
+import DatasetDetails from "./pages/DatasetDetails";
 import NotificationSettings from "./pages/NotificationSettings";
 
 function App() {
@@ -109,9 +111,20 @@ function App() {
             />
 
             <Route
-              path="/dataset-preview"
-              element={<DatasetPreview />}
-            />
+
+  path="/dataset-preview"
+  element={<DatasetPreview />}
+/>
+
+<Route
+  path="/datasets"
+  element={<DatasetList />}
+/>
+
+<Route
+  path="/datasets/:id"
+  element={<DatasetDetails />}
+/>
 
           </Route>
         </Route>

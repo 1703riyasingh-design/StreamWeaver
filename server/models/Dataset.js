@@ -25,6 +25,17 @@ const datasetSchema = new mongoose.Schema(
       default: 0,
     },
 
+        validRows: {
+      type: Number,
+      default: 0,
+    },
+
+    invalidRows: {
+      type: Number,
+      default: 0,
+    },
+
+
     columns: {
       type: [String],
       default: [],

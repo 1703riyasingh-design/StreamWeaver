@@ -14,33 +14,106 @@ function Sidebar({ closeSidebar }) {
         <span className="brand-icon">🎥</span>
         <span className="brand-text">StreamWeaver</span>
       </div>
+
       <nav className="sidebar-nav">
         <span className="nav-label">Main Menu</span>
-        <NavLink to="/dashboard" className={({ isActive }) => (isActive ? "active" : "")} onClick={closeSidebar}>
-          <span className="nav-icon">📊</span> Dashboard
+
+        <NavLink
+          to="/dashboard"
+          className={({ isActive }) =>
+            isActive ? "active" : ""
+          }
+          onClick={closeSidebar}
+        >
+          <span className="nav-icon">📊</span>
+          Dashboard
         </NavLink>
-        <NavLink to="/streams" className={({ isActive }) => (isActive ? "active" : "")} onClick={closeSidebar}>
-          <span className="nav-icon">📺</span> Streams
+
+        <NavLink
+          to="/streams"
+          className={({ isActive }) =>
+            isActive ? "active" : ""
+          }
+          onClick={closeSidebar}
+        >
+          <span className="nav-icon">📺</span>
+          Streams
         </NavLink>
-        <NavLink to="/media" className={({ isActive }) => (isActive ? "active" : "")} onClick={closeSidebar}>
-          <span className="nav-icon">🎬</span> Media Library
+
+        <NavLink
+          to="/media"
+          className={({ isActive }) =>
+            isActive ? "active" : ""
+          }
+          onClick={closeSidebar}
+        >
+          <span className="nav-icon">🎬</span>
+          Media Library
         </NavLink>
-        <NavLink to="/analytics" className={({ isActive }) => (isActive ? "active" : "")} onClick={closeSidebar}>
-          <span className="nav-icon">📈</span> Analytics
+
+        <NavLink
+          to="/analytics"
+          className={({ isActive }) =>
+            isActive ? "active" : ""
+          }
+          onClick={closeSidebar}
+        >
+          <span className="nav-icon">📈</span>
+          Analytics
         </NavLink>
-        <NavLink to="/profile" className={({ isActive }) => (isActive ? "active" : "")} onClick={closeSidebar}>
-          <span className="nav-icon">👤</span> Profile
+
+        <NavLink
+          to="/profile"
+          className={({ isActive }) =>
+            isActive ? "active" : ""
+          }
+          onClick={closeSidebar}
+        >
+          <span className="nav-icon">👤</span>
+          Profile
         </NavLink>
-        <NavLink to="/upload-dataset" className={({ isActive }) => (isActive ? "active" : "")} onClick={closeSidebar}>
-          <span className="nav-icon">📦</span> Upload Dataset
+
+        <NavLink
+          to="/upload-dataset"
+          className={({ isActive }) =>
+            isActive ? "active" : ""
+          }
+          onClick={closeSidebar}
+        >
+          <span className="nav-icon">📦</span>
+          Upload Dataset
         </NavLink>
-        <NavLink to="/settings" className={({ isActive }) => (isActive ? "active" : "")} onClick={closeSidebar}>
-          <span className="nav-icon">⚙️</span> Settings
+
+        <NavLink
+          to="/datasets"
+          className={({ isActive }) =>
+            isActive ? "active" : ""
+          }
+          onClick={closeSidebar}
+        >
+          <span className="nav-icon">📋</span>
+          Datasets
+        </NavLink>
+
+        <NavLink
+          to="/settings"
+          className={({ isActive }) =>
+            isActive ? "active" : ""
+          }
+          onClick={closeSidebar}
+        >
+          <span className="nav-icon">⚙️</span>
+          Settings
         </NavLink>
       </nav>
+
       <div className="sidebar-footer">
-        <button className="logout-btn" onClick={handleLogout}>
-          <span className="logout-icon">🚪</span> Logout
+        <button
+          className="logout-btn"
+          onClick={handleLogout}
+        >
+          <span className="logout-icon">🚪</span>
+          Logout
         </button>
       </div>
     </aside>

@@ -28,9 +28,12 @@ const getAllDatasets = async (req, res) => {
 // GET dataset by ID
 const getDatasetById = async (req, res) => {
     try {
+        const datasetId = req.params.id;
+
+        // Get dataset metadata
         const dataset = await Dataset.findById(
-            req.params.id
-        );
+            datasetId
+        ).lean();
 
         if (!dataset) {
             return res.status(404).json({
@@ -39,17 +42,46 @@ const getDatasetById = async (req, res) => {
             });
         }
 
+        // Get first 100 rows as preview
+        const previewRows = await DatasetRow.find({
+            datasetId
+        })
+            .sort({ createdAt: 1 })
+            .limit(100)
+            .lean();
+
+        // Validation summary
+        const totalRows = dataset.totalRows;
+
+        const validRows = dataset.validRows;
+
+        const invalidRows = dataset.invalidRows;
+
         return res.status(200).json({
             success: true,
-            dataset
+
+            dataset: {
+                ...dataset,
+
+                validationSummary: {
+                    totalRows,
+                    validRows,
+                    invalidRows
+                },
+
+                preview: previewRows
+            }
         });
 
     } catch (error) {
-        console.error("Get Dataset Error:", error);
+        console.error(
+            "Get Dataset Details Error:",
+            error
+        );
 
         return res.status(500).json({
             success: false,
-            message: "Failed to fetch dataset",
+            message: "Failed to fetch dataset details",
             error: error.message
         });
     }
@@ -206,10 +238,52 @@ const getValidationSummary = async (req, res) => {
     }
 };
 
+// GET dashboard statistics
+const getDashboardStats = async (req, res) => {
+  try {
+    const totalDatasets = await Dataset.countDocuments();
+
+    const totalRows = await DatasetRow.countDocuments();
+
+    const validRows = await DatasetRow.countDocuments({
+      isValid: true
+    });
+
+    const invalidRows = await DatasetRow.countDocuments({
+      isValid: false
+    });
+
+    return res.status(200).json({
+      success: true,
+
+      stats: {
+        totalDatasets,
+        totalRows,
+        validRows,
+        invalidRows
+      }
+    });
+
+  } catch (error) {
+
+    console.error(
+      "Dashboard Stats Error:",
+      error
+    );
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch dashboard statistics",
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
     getAllDatasets,
     getDatasetById,
     getDatasetRows,
     getValidationSummary,
-    deleteDataset
+    deleteDataset,
+    getDashboardStats
 };
