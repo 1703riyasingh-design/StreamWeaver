@@ -17,8 +17,8 @@ function normalizeColumnName(value) {
 }
 
 function buildDefaultMapping(columns = []) {
-  const normalizedColumns = columns.map(
-    (column) => String(column).trim()
+  const normalizedColumns = columns.map((column) =>
+    String(column).trim()
   );
 
   return REQUIRED_FIELDS.reduce(
@@ -27,19 +27,19 @@ function buildDefaultMapping(columns = []) {
         userId: [
           "userid",
           "user_id",
-          "id"
+          "id",
         ],
         name: [
           "name",
           "full name",
-          "fullname"
+          "fullname",
         ],
         city: [
           "city",
-          "location"
+          "location",
         ],
         email: [
-          "email"
+          "email",
         ],
       }[field.key] || [field.label];
 
@@ -77,7 +77,7 @@ function ColumnMappingPanel({
 
       <div className="mapping-header">
         <h3>Column Mapping</h3>
-        <span>Map your CSV columns</span>
+        <span>Map your dataset columns</span>
       </div>
 
       <div className="mapping-grid">
@@ -108,7 +108,7 @@ function ColumnMappingPanel({
             >
 
               <option value="">
-                Select CSV column
+                Select dataset column
               </option>
 
               {csvColumns.map((column) => (
@@ -134,6 +134,7 @@ function ColumnMappingPanel({
         <ul>
           {REQUIRED_FIELDS.map((field) => (
             <li key={field.key}>
+
               <strong>
                 {field.label}
               </strong>
@@ -142,6 +143,7 @@ function ColumnMappingPanel({
 
               {fieldMapping[field.key] ||
                 "Not selected"}
+
             </li>
           ))}
         </ul>
@@ -200,9 +202,14 @@ function UploadDataset() {
     const fileName =
       selectedFile.name.toLowerCase();
 
-    if (!fileName.endsWith(".csv")) {
+
+    // Check supported file types
+    if (
+      !fileName.endsWith(".csv") &&
+      !fileName.endsWith(".json")
+    ) {
       setErrorMessage(
-        "Currently only CSV files are supported."
+        "Currently only CSV and JSON files are supported."
       );
 
       setFile(null);
@@ -212,45 +219,123 @@ function UploadDataset() {
       return;
     }
 
+
     try {
       const text =
         await selectedFile.text();
 
-      const firstLine =
-        text.split(/\r?\n/)[0];
+      let extractedColumns = [];
 
-      if (!firstLine) {
-        setErrorMessage(
-          "CSV file is empty or invalid."
-        );
 
-        return;
+      // =========================
+      // CSV COLUMN EXTRACTION
+      // =========================
+      if (
+        fileName.endsWith(".csv")
+      ) {
+        const firstLine =
+          text.split(/\r?\n/)[0];
+
+        if (!firstLine) {
+          setErrorMessage(
+            "CSV file is empty or invalid."
+          );
+
+          return;
+        }
+
+        extractedColumns =
+          firstLine
+            .split(",")
+            .map((column) =>
+              column.trim()
+            )
+            .filter(Boolean);
       }
 
-      const extractedColumns =
-        firstLine
-          .split(",")
-          .map((column) =>
-            column.trim()
-          )
-          .filter(Boolean);
 
+      // =========================
+      // JSON COLUMN EXTRACTION
+      // =========================
+      if (
+        fileName.endsWith(".json")
+      ) {
+        const jsonData =
+          JSON.parse(text);
+
+        let rows = [];
+
+
+        // JSON Array
+        if (
+          Array.isArray(jsonData)
+        ) {
+          rows = jsonData;
+        }
+
+
+        // JSON Object
+        else if (
+          jsonData &&
+          typeof jsonData === "object"
+        ) {
+          const nestedArray =
+            Object.values(
+              jsonData
+            ).find(
+              (value) =>
+                Array.isArray(value)
+            );
+
+          rows =
+            nestedArray ||
+            [jsonData];
+        }
+
+
+        if (
+          rows.length === 0
+        ) {
+          setErrorMessage(
+            "JSON file is empty or does not contain data."
+          );
+
+          return;
+        }
+
+
+        extractedColumns =
+          Object.keys(
+            rows[0] || {}
+          );
+      }
+
+
+      // Check columns
       if (
         extractedColumns.length === 0
       ) {
         setErrorMessage(
-          "No columns found in the CSV file."
+          "No columns found in the selected file."
         );
 
         return;
       }
 
-      setFile(selectedFile);
 
+      // Save file
+      setFile(
+        selectedFile
+      );
+
+
+      // Save detected columns
       setColumns(
         extractedColumns
       );
 
+
+      // Auto mapping
       const defaultMapping =
         buildDefaultMapping(
           extractedColumns
@@ -260,15 +345,29 @@ function UploadDataset() {
         defaultMapping
       );
 
+
     } catch (error) {
       console.error(
         "File read error:",
         error
       );
 
-      setErrorMessage(
-        "Failed to read CSV file."
-      );
+      setFile(null);
+      setColumns([]);
+      setMapping({});
+
+
+      if (
+        fileName.endsWith(".json")
+      ) {
+        setErrorMessage(
+          "Invalid JSON file. Please check the JSON format."
+        );
+      } else {
+        setErrorMessage(
+          "Failed to read CSV file."
+        );
+      }
     }
   };
 
@@ -276,7 +375,11 @@ function UploadDataset() {
   const handleUpload = async () => {
     setErrorMessage("");
 
-    if (!datasetName.trim()) {
+
+    // Dataset name validation
+    if (
+      !datasetName.trim()
+    ) {
       setErrorMessage(
         "Please enter a dataset name."
       );
@@ -284,27 +387,40 @@ function UploadDataset() {
       return;
     }
 
-    if (!file) {
+
+    // File validation
+    if (
+      !file
+    ) {
       setErrorMessage(
-        "Please select a CSV file."
+        "Please select a CSV or JSON file."
       );
 
       return;
     }
 
-    if (columns.length === 0) {
+
+    // Column validation
+    if (
+      columns.length === 0
+    ) {
       setErrorMessage(
-        "No columns found in the CSV file."
+        "No columns found in the selected file."
       );
 
       return;
     }
 
+
+    // Mapping validation
     const mappingValues =
       Object.values(mapping)
         .filter(Boolean);
 
-    if (mappingValues.length === 0) {
+
+    if (
+      mappingValues.length === 0
+    ) {
       setErrorMessage(
         "Please map at least one column."
       );
@@ -312,40 +428,53 @@ function UploadDataset() {
       return;
     }
 
+
+    // Check duplicate mappings
     const uniqueValues =
-      [...new Set(mappingValues)];
+      [
+        ...new Set(
+          mappingValues
+        ),
+      ];
+
 
     if (
       uniqueValues.length !==
       mappingValues.length
     ) {
       setErrorMessage(
-        "Duplicate database fields are not allowed."
+        "Duplicate column mappings are not allowed."
       );
 
       return;
     }
 
+
     setIsUploading(true);
+
 
     try {
       const formData =
         new FormData();
+
 
       formData.append(
         "file",
         file
       );
 
+
       formData.append(
         "datasetName",
         datasetName.trim()
       );
 
+
       formData.append(
         "mapping",
         JSON.stringify(mapping)
       );
+
 
       const response =
         await fetch(
@@ -356,26 +485,36 @@ function UploadDataset() {
           }
         );
 
+
       const result =
         await response.json();
 
-      if (!response.ok) {
+
+      if (
+        !response.ok
+      ) {
         throw new Error(
           result.message ||
           "Upload failed"
         );
       }
 
+
       console.log(
         "Upload successful:",
         result
       );
 
+
       alert(
         `Dataset "${result.dataset.datasetName}" uploaded successfully!`
       );
 
-      navigate("/datasets");
+
+      navigate(
+        "/datasets"
+      );
+
 
     } catch (error) {
       console.error(
@@ -383,10 +522,12 @@ function UploadDataset() {
         error
       );
 
+
       setErrorMessage(
         error.message ||
         "Upload failed. Please try again."
       );
+
 
     } finally {
       setIsUploading(false);
@@ -413,6 +554,7 @@ function UploadDataset() {
 
           </div>
 
+
           <span className="upload-status">
             Ready
           </span>
@@ -423,7 +565,7 @@ function UploadDataset() {
         <div className="upload-body">
 
           <p className="upload-description">
-            Upload your CSV dataset,
+            Upload your CSV or JSON dataset,
             map columns, and process
             the data.
           </p>
@@ -431,6 +573,8 @@ function UploadDataset() {
 
           <div className="upload-grid">
 
+
+            {/* Dataset Name */}
             <div className="upload-field">
 
               <label
@@ -455,6 +599,7 @@ function UploadDataset() {
             </div>
 
 
+            {/* File Upload */}
             <div className="upload-field">
 
               <label
@@ -463,13 +608,14 @@ function UploadDataset() {
                 Choose Dataset
               </label>
 
+
               <div className="upload-file-wrap">
 
                 <input
                   id="dataset-file"
                   className="upload-file-input"
                   type="file"
-                  accept=".csv"
+                  accept=".csv,.json"
                   onChange={
                     handleFileChange
                   }
@@ -482,6 +628,7 @@ function UploadDataset() {
           </div>
 
 
+          {/* Selected File */}
           <div className="upload-meta">
 
             {file && (
@@ -490,13 +637,15 @@ function UploadDataset() {
               </span>
             )}
 
+
             <span className="file-format">
-              CSV
+              CSV, JSON
             </span>
 
           </div>
 
 
+          {/* Error */}
           {errorMessage && (
             <div
               className="upload-error"
@@ -507,6 +656,7 @@ function UploadDataset() {
           )}
 
 
+          {/* Column Mapping */}
           {columns.length > 0 && (
             <ColumnMappingPanel
               csvColumns={columns}
@@ -518,6 +668,7 @@ function UploadDataset() {
           )}
 
 
+          {/* Upload Progress */}
           {isUploading && (
             <div className="upload-progress">
 
@@ -533,6 +684,7 @@ function UploadDataset() {
           )}
 
 
+          {/* Upload Button */}
           <div className="upload-actions">
 
             <button
