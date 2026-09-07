@@ -96,6 +96,9 @@ const getCSVHeaders = async (filePath) => {
 const uploadFile = async (req, res) => {
   let filePath = null;
 
+const socketId = req.body.socketId;
+const io = req.io;
+
   res.on("finish", () => {
     console.log(
       "Response finished with status:",
@@ -354,6 +357,15 @@ if (
         columns: [],
       });
 
+      if (socketId && io) {
+  io.to(socketId).emit(
+    "upload-progress",
+    {
+      progress: 0,
+      message: "Processing started",
+    }
+  );
+}
 
     // ====================================
     // PROCESSING VARIABLES
@@ -370,6 +382,17 @@ if (
     const previewRows = [];
 
 
+    let totalRowsForProgress = 0;
+
+if (fileExtension === ".json") {
+  totalRowsForProgress = jsonRows.length;
+}
+
+if (fileExtension === ".xlsx") {
+  totalRowsForProgress = xlsxRows.length;
+}
+
+
     // ====================================
     // COMMON ROW PROCESSOR
     // ====================================
@@ -379,6 +402,33 @@ if (
     ) => {
 
       totalRows++;
+
+    
+    // ====================================
+// REAL-TIME PROGRESS
+// ====================================
+
+if (
+  socketId &&
+  io &&
+  totalRowsForProgress > 0
+) {
+  const progress =
+    Math.round(
+      (totalRows /
+        totalRowsForProgress) *
+        100
+    );
+
+  io.to(socketId).emit(
+    "upload-progress",
+    {
+      progress,
+      message:
+        `Processing row ${totalRows} of ${totalRowsForProgress}`,
+    }
+  );
+}
 
 
       // Apply mapping

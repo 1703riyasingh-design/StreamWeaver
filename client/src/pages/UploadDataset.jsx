@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
+import socket from "../socket";
 import "./UploadDataset.css";
 
 const REQUIRED_FIELDS = [
@@ -135,10 +136,48 @@ function UploadDataset() {
   const [isUploading, setIsUploading] =
     useState(false);
 
+  const [uploadProgress, setUploadProgress] =
+  useState({
+    progress: 0,
+    message: "",
+  });
+
+
+
   const [errorMessage, setErrorMessage] =
     useState("");
 
+ 
+
   const navigate = useNavigate();
+
+ useEffect(() => {
+  const handleProgress = (data) => {
+    console.log(
+      "Upload progress received:",
+      data
+    );
+
+    setUploadProgress({
+      progress: data.progress || 0,
+      message:
+        data.message ||
+        "Processing dataset...",
+    });
+  };
+
+  socket.on(
+    "upload-progress",
+    handleProgress
+  );
+
+  return () => {
+    socket.off(
+      "upload-progress",
+      handleProgress
+    );
+  };
+}, []);
 
   const handleMappingChange = (
     fieldKey,
@@ -409,47 +448,65 @@ function UploadDataset() {
       return;
     }
 
-    setIsUploading(true);
 
-    try {
-      const formData =
-        new FormData();
+if (!socket.connected) {
+  socket.connect();
+}
 
-      formData.append(
-        "file",
-        file
-      );
-
-      formData.append(
-        "datasetName",
-        datasetName.trim()
-      );
-
-      const backendMapping = {};
-
-Object.entries(mapping).forEach(
-  ([targetField, sourceColumn]) => {
-    if (sourceColumn) {
-      backendMapping[sourceColumn] =
-        targetField;
-    }
-  }
+console.log(
+  "Socket ID before upload:",
+  socket.id
 );
 
-formData.append(
-  "mapping",
-  JSON.stringify(backendMapping)
-);
+setUploadProgress({
+  progress: 0,
+  message: "Starting upload...",
+});
 
-const response =
-  await fetch(
-    "http://localhost:5000/api/upload",
-    {
-      method: "POST",
-      body: formData,
+setIsUploading(true);
+
+try {
+  const formData =
+    new FormData();
+
+  formData.append(
+    "file",
+    file
+  );
+
+  formData.append(
+    "datasetName",
+    datasetName.trim()
+  );
+
+  formData.append(
+    "socketId",
+    socket.id
+  );
+
+  const backendMapping = {};
+
+  Object.entries(mapping).forEach(
+    ([targetField, sourceColumn]) => {
+      if (sourceColumn) {
+        backendMapping[sourceColumn] =
+          targetField;
+      }
     }
   );
 
+  formData.append(
+    "mapping",
+    JSON.stringify(backendMapping)
+  );
+
+const response = await fetch(
+  "http://localhost:5000/api/upload",
+  {
+    method: "POST",
+    body: formData,
+  }
+);
       const result =
         await response.json();
 
@@ -588,15 +645,35 @@ const response =
             />
           )}
 
-          {isUploading && (
-            <div className="upload-progress">
-              <span className="spinner" />
+{isUploading && (
+  <div className="upload-progress">
 
-              <span>
-                Uploading and processing...
-              </span>
-            </div>
-          )}
+    <div className="progress-info">
+      <span>
+        {uploadProgress.message ||
+          "Processing dataset..."}
+      </span>
+
+      <strong>
+        {uploadProgress.progress}%
+      </strong>
+    </div>
+
+    <div className="progress-bar">
+      <div
+        className="progress-fill"
+        style={{
+          width: `${uploadProgress.progress}%`,
+        }}
+      />
+    </div>
+
+    <span className="progress-text">
+      Uploading and processing data...
+    </span>
+
+  </div>
+)}
 
           <div className="upload-actions">
             <button

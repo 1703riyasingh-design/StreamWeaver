@@ -13,7 +13,11 @@ const httpServer = http.createServer(app);
 
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5180",
+      "http://localhost:5190",
+    ],
     methods: ["GET", "POST"],
   },
 });
@@ -36,6 +40,11 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("Socket disconnected:", socket.id);
   });
+});
+
+app.use((req, res, next) => {
+  req.io = io;
+  next();
 });
 
 // Existing routes
