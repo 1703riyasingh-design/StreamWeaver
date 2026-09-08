@@ -124,6 +124,11 @@ function ColumnMappingPanel({
     email: [accountValues.email],
   };
 
+  const getDefaultSourceColumn = (fieldKey) =>
+    fieldMapping[fieldKey] ||
+    (fieldKey === "id" ? mappedIdColumn : datasetColumns[0]) ||
+    "";
+
   return (
     <div className="mapping-panel">
       <div className="mapping-header">
@@ -143,7 +148,7 @@ function ColumnMappingPanel({
 
             <select
               id={`mapping-${field.key}`}
-              value={fieldMapping[field.key] || ""}
+              value={getDefaultSourceColumn(field.key)}
               onChange={(event) =>
                 onMappingChange(
                   field.key,
@@ -151,11 +156,9 @@ function ColumnMappingPanel({
                 )
               }
             >
-              <option value="">
-                {accountValues[field.key]}
-              </option>
-
-              {(field.key === "id" ? [mappedIdColumn] : datasetColumns)
+              {(field.key === "id"
+                ? [mappedIdColumn || datasetColumns[0]]
+                : datasetColumns)
                 .filter(Boolean)
                 .flatMap((column) =>
                   (mappedColumns[field.key] || [column]).map((displayValue) => ({
