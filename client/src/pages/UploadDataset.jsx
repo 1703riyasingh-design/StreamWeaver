@@ -11,6 +11,19 @@ const REQUIRED_FIELDS = [
   { key: "email", label: "Email" },
 ];
 
+const CITY_OPTIONS = [
+  "Bengaluru",
+  "Mysore",
+  "Mumbai",
+  "Delhi",
+  "Hyderabad",
+  "Chennai",
+  "Pune",
+  "Kolkata",
+  "Ahmedabad",
+  "Jaipur",
+];
+
 function normalizeColumnName(value) {
   return String(value ?? "")
     .trim()
@@ -99,6 +112,18 @@ function ColumnMappingPanel({
     ) ||
     "";
 
+  const mappedColumns = {
+    id: [
+      `${account.name || "User"} (${accountValues.id})`,
+    ],
+    name: [accountValues.name],
+    city: [
+      accountValues.city,
+      ...CITY_OPTIONS,
+    ],
+    email: [accountValues.email],
+  };
+
   return (
     <div className="mapping-panel">
       <div className="mapping-header">
@@ -132,12 +157,21 @@ function ColumnMappingPanel({
 
               {(field.key === "id" ? [mappedIdColumn] : datasetColumns)
                 .filter(Boolean)
-                .map((column) => (
+                .flatMap((column) =>
+                  (mappedColumns[field.key] || [column]).map((displayValue) => ({
+                    column,
+                    displayValue,
+                  }))
+                )
+                .filter(({ displayValue }, index, options) =>
+                  options.findIndex((option) => option.displayValue === displayValue) === index
+                )
+                .map(({ column, displayValue }) => (
                   <option
-                    key={column}
+                    key={`${column}-${displayValue}`}
                     value={column}
                   >
-                    {accountValues[field.key]}
+                    {displayValue}
                   </option>
                 ))}
             </select>

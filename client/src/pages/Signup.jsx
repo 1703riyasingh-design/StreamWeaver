@@ -3,6 +3,19 @@ import { useNavigate } from "react-router-dom";
 
 const EMAIL_PATTERN = /^[a-zA-Z][a-zA-Z0-9._-]*@(gmail\.com|mail\.com)$/;
 
+const CITY_OPTIONS = [
+  "Bengaluru",
+  "Mysore",
+  "Mumbai",
+  "Delhi",
+  "Hyderabad",
+  "Chennai",
+  "Pune",
+  "Kolkata",
+  "Ahmedabad",
+  "Jaipur",
+];
+
 function getPasswordChecks(password) {
   return {
     length: password.length >= 8,
@@ -151,6 +164,7 @@ function Signup() {
             type="text"
             placeholder="Enter your city"
             value={city}
+            list="city-options"
             onChange={(e) => {
               setCity(e.target.value);
               if (cityError) setCityError(validateCity(e.target.value));
@@ -158,6 +172,11 @@ function Signup() {
             className={cityError ? "input-error" : ""}
             required
           />
+          <datalist id="city-options">
+            {CITY_OPTIONS.map((cityOption) => (
+              <option key={cityOption} value={cityOption} />
+            ))}
+          </datalist>
           {cityError && <p className="field-error">{cityError}</p>}
 
           <label>Email</label>
