@@ -152,7 +152,7 @@ function ColumnMappingPanel({
               }
             >
               <option value="">
-                Select dataset column
+                {accountValues[field.key]}
               </option>
 
               {(field.key === "id" ? [mappedIdColumn] : datasetColumns)
