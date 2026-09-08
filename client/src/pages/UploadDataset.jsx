@@ -56,6 +56,18 @@ function ColumnMappingPanel({
   fieldMapping,
   onMappingChange,
 }) {
+  const loggedInUserId =
+    sessionStorage.getItem("streamweaver_user_id") ||
+    sessionStorage.getItem("streamweaver_user") ||
+    "Logged-in user ID";
+
+  const mappedIdColumn =
+    fieldMapping.id ||
+    datasetColumns.find((column) =>
+      normalizeColumnName(column).includes("id")
+    ) ||
+    "";
+
   return (
     <div className="mapping-panel">
       <div className="mapping-header">
@@ -87,14 +99,16 @@ function ColumnMappingPanel({
                 Select dataset column
               </option>
 
-              {datasetColumns.map((column) => (
-                <option
-                  key={column}
-                  value={column}
-                >
-                  {column}
-                </option>
-              ))}
+              {(field.key === "id" ? [mappedIdColumn] : datasetColumns)
+                .filter(Boolean)
+                .map((column) => (
+                  <option
+                    key={column}
+                    value={column}
+                  >
+                    {field.key === "id" ? loggedInUserId : column}
+                  </option>
+                ))}
             </select>
           </div>
         ))}
