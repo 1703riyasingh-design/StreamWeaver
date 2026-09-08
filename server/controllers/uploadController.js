@@ -1,18 +1,38 @@
 const fs = require("fs");
 const path = require("path");
-const { Writable } = require("stream");
-const { pipeline } = require("stream/promises");
 
-const CSVParser = require("../streams/csvParser");
-const DataTransformStream = require("../streams/transformStream");
+const {
+  Writable,
+  Readable,
+} = require("stream");
 
-const applyMapping = require("../utils/applyMapping");
-const validateRow = require("../services/validateRow");
-const validateMapping = require("../utils/validateMapping");
-const generateAutoMapping = require("../utils/autoMapping");
+const {
+  pipeline,
+} = require("stream/promises");
 
-const parseJSONFile = require("../utils/jsonParser");
-const parseXLSXFile = require("../utils/xlsxParser");
+const CSVParser =
+  require("../streams/csvParser");
+
+const DataTransformStream =
+  require("../streams/transformStream");
+
+const applyMapping =
+  require("../utils/applyMapping");
+
+const validateRow =
+  require("../services/validateRow");
+
+const validateMapping =
+  require("../utils/validateMapping");
+
+const generateAutoMapping =
+  require("../utils/autoMapping");
+
+const parseJSONFile =
+  require("../utils/jsonParser");
+
+const parseXLSXFile =
+  require("../utils/xlsxParser");
 
 const {
   createDataset,
@@ -24,67 +44,192 @@ const {
 // GET CSV HEADERS
 // ========================================
 
-const getCSVHeaders = async (filePath) => {
-  return new Promise((resolve, reject) => {
-    const stream = fs.createReadStream(filePath, {
-      encoding: "utf8",
-    });
+const getCSVHeaders = async (
+  filePath
+) => {
+  return new Promise(
+    (resolve, reject) => {
 
-    let firstLine = "";
-    let resolved = false;
+      const stream =
+        fs.createReadStream(
+          filePath,
+          {
+            encoding: "utf8",
+          }
+        );
 
-    stream.on("data", (chunk) => {
-      firstLine += chunk;
+      let firstLine = "";
+      let resolved = false;
 
-      const newlineIndex =
-        firstLine.indexOf("\n");
+      stream.on(
+        "data",
+        (chunk) => {
 
-      if (
-        newlineIndex !== -1 &&
-        !resolved
-      ) {
-        resolved = true;
+          firstLine += chunk;
 
-        stream.destroy();
+          const newlineIndex =
+            firstLine.indexOf(
+              "\n"
+            );
 
-        const headerLine =
-          firstLine
-            .slice(0, newlineIndex)
-            .replace(/\r$/, "");
+          if (
+            newlineIndex !== -1 &&
+            !resolved
+          ) {
+            resolved = true;
 
-        const headers =
-          headerLine
-            .split(",")
-            .map((header) =>
-              header.trim()
+            stream.destroy();
+
+            const headerLine =
+              firstLine
+                .slice(
+                  0,
+                  newlineIndex
+                )
+                .replace(
+                  /\r$/,
+                  ""
+                );
+
+            const headers =
+              headerLine
+                .split(",")
+                .map(
+                  (header) =>
+                    header.trim()
+                )
+                .filter(Boolean);
+
+            resolve(headers);
+          }
+        }
+      );
+
+      stream.on(
+        "error",
+        reject
+      );
+
+      stream.on(
+        "close",
+        () => {
+
+          if (
+            !resolved &&
+            firstLine
+          ) {
+            resolved = true;
+
+            const headers =
+              firstLine
+                .replace(
+                  /\r$/,
+                  ""
+                )
+                .split(",")
+                .map(
+                  (header) =>
+                    header.trim()
+                )
+                .filter(Boolean);
+
+            resolve(headers);
+          }
+        }
+      );
+    }
+  );
+};
+
+
+// ========================================
+// COUNT CSV ROWS FOR PROGRESS
+// ========================================
+
+const countCSVRows = async (
+  filePath
+) => {
+  return new Promise(
+    (resolve, reject) => {
+
+      const stream =
+        fs.createReadStream(
+          filePath,
+          {
+            encoding: "utf8",
+          }
+        );
+
+      let rows = 0;
+
+      stream.on(
+        "data",
+        (chunk) => {
+
+          for (
+            let i = 0;
+            i < chunk.length;
+            i++
+          ) {
+            if (
+              chunk[i] === "\n"
+            ) {
+              rows++;
+            }
+          }
+        }
+      );
+
+      stream.on(
+        "end",
+        () => {
+
+          // Remove header row
+          resolve(
+            Math.max(
+              rows - 1,
+              0
             )
-            .filter(Boolean);
+          );
+        }
+      );
 
-        resolve(headers);
-      }
-    });
+      stream.on(
+        "error",
+        reject
+      );
+    }
+  );
+};
 
-    stream.on("error", reject);
 
-    stream.on("close", () => {
-      if (
-        !resolved &&
-        !firstLine.includes("\n")
-      ) {
-        resolved = true;
+// ========================================
+// CREATE DATABASE WRITER
+// ========================================
 
-        const headers =
-          firstLine
-            .replace(/\r$/, "")
-            .split(",")
-            .map((header) =>
-              header.trim()
-            )
-            .filter(Boolean);
+const createDatabaseWriter = (
+  processRow
+) => {
 
-        resolve(headers);
-      }
-    });
+  return new Writable({
+
+    objectMode: true,
+
+    write(
+      row,
+      encoding,
+      callback
+    ) {
+
+      processRow(row)
+        .then(() => {
+          callback();
+        })
+        .catch(
+          callback
+        );
+    },
+
   });
 };
 
@@ -93,48 +238,83 @@ const getCSVHeaders = async (filePath) => {
 // UPLOAD FILE
 // ========================================
 
-const uploadFile = async (req, res) => {
+const uploadFile = async (
+  req,
+  res
+) => {
+
   let filePath = null;
 
-const socketId = req.body.socketId;
-const io = req.io;
+  const socketId =
+    req.body.socketId;
 
-  res.on("finish", () => {
-    console.log(
-      "Response finished with status:",
-      res.statusCode
-    );
-  });
+  const io =
+    req.io;
+
+
+  res.on(
+    "finish",
+    () => {
+      console.log(
+        "Response finished with status:",
+        res.statusCode
+      );
+    }
+  );
 
 
   try {
 
-    console.log("=================================");
-    console.log("UPLOAD REQUEST RECEIVED");
+    console.log(
+      "================================="
+    );
 
-    if (req.file) {
-      console.log("File name:", req.file.originalname);
-      console.log("File path:", req.file.path);
-    }
+    console.log(
+      "UPLOAD REQUEST RECEIVED"
+    );
 
-    console.log("=================================");
 
     // ====================================
     // CHECK FILE
     // ====================================
 
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: "No file uploaded",
-      });
+    if (
+      !req.file
+    ) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message:
+            "No file uploaded",
+        });
     }
 
-    filePath = req.file.path;
+
+    filePath =
+      req.file.path;
+
+
+    console.log(
+      "File name:",
+      req.file.originalname
+    );
+
+    console.log(
+      "File path:",
+      filePath
+    );
+
+
+    // ====================================
+    // GET FILE EXTENSION
+    // ====================================
 
     const fileExtension =
       path
-        .extname(req.file.originalname)
+        .extname(
+          req.file.originalname
+        )
         .toLowerCase();
 
 
@@ -142,16 +322,25 @@ const io = req.io;
     // CHECK FILE TYPE
     // ====================================
 
+    const supportedTypes = [
+      ".csv",
+      ".json",
+      ".xlsx",
+    ];
+
+
     if (
-      fileExtension !== ".csv" &&
-      fileExtension !== ".json" &&
-      fileExtension !== ".xlsx"
+      !supportedTypes.includes(
+        fileExtension
+      )
     ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Only CSV, JSON and XLSX files are supported.",
-      });
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message:
+            "Only CSV, JSON and XLSX files are supported.",
+        });
     }
 
 
@@ -160,20 +349,30 @@ const io = req.io;
     // ====================================
 
     let originalColumns = [];
+
     let jsonRows = [];
+
     let xlsxRows = [];
+
     let mapping = {};
+
+    const transformCode =
+      req.body.transformCode ||
+      null;
 
 
     // ====================================
-    // READ CSV HEADERS
+    // READ CSV
     // ====================================
 
     if (
       fileExtension === ".csv"
     ) {
+
       originalColumns =
-        await getCSVHeaders(filePath);
+        await getCSVHeaders(
+          filePath
+        );
     }
 
 
@@ -181,100 +380,102 @@ const io = req.io;
     // READ JSON
     // ====================================
 
-if (
-  fileExtension === ".json"
-) {
+    if (
+      fileExtension === ".json"
+    ) {
 
-  console.log("Starting JSON parsing...");
+      console.log(
+        "Starting JSON parsing..."
+      );
 
-  const parsedJSON =
-    await parseJSONFile(
-      filePath
-    );
+      const parsedJSON =
+        await parseJSONFile(
+          filePath
+        );
 
-  console.log("JSON parsed successfully");
+      jsonRows =
+        parsedJSON.rows;
 
-  jsonRows =
-    parsedJSON.rows;
+      originalColumns =
+        parsedJSON.columns;
 
-  originalColumns =
-    parsedJSON.columns;
-
-  console.log(
-    "JSON rows found:",
-    jsonRows.length
-  );
-
-  console.log(
-    "JSON columns:",
-    originalColumns
-  );
 
       if (
-        !Array.isArray(jsonRows) ||
+        !Array.isArray(
+          jsonRows
+        ) ||
         jsonRows.length === 0
       ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "JSON file is empty or invalid.",
-        });
+
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message:
+              "JSON file is empty or invalid.",
+          });
       }
     }
 
-// ====================================
-// READ XLSX
-// ====================================
 
-if (
-  fileExtension === ".xlsx"
-) {
+    // ====================================
+    // READ XLSX
+    // ====================================
 
-  console.log(
-    "Starting XLSX parsing..."
-  );
+    if (
+      fileExtension === ".xlsx"
+    ) {
 
-  const parsedXLSX =
-    await parseXLSXFile(
-      filePath
-    );
+      console.log(
+        "Starting XLSX parsing..."
+      );
 
-  console.log(
-    "XLSX parsed successfully"
-  );
+      const parsedXLSX =
+        await parseXLSXFile(
+          filePath
+        );
 
-  xlsxRows =
-    parsedXLSX.rows;
+      xlsxRows =
+        parsedXLSX.rows;
 
-  originalColumns =
-    parsedXLSX.columns;
-
-  console.log(
-    "XLSX rows found:",
-    xlsxRows.length
-  );
-
-  console.log(
-    "XLSX columns:",
-    originalColumns
-  );
-
-  if (
-    !Array.isArray(xlsxRows) ||
-    xlsxRows.length === 0
-  ) {
-    return res.status(400).json({
-      success: false,
-      message:
-        "XLSX file is empty or invalid.",
-    });
-  }
-}
+      originalColumns =
+        parsedXLSX.columns;
 
 
+      if (
+        !Array.isArray(
+          xlsxRows
+        ) ||
+        xlsxRows.length === 0
+      ) {
+
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message:
+              "XLSX file is empty or invalid.",
+          });
+      }
+    }
 
 
+    // ====================================
+    // CHECK COLUMNS
+    // ====================================
 
+    if (
+      originalColumns.length === 0
+    ) {
+
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message:
+            "No columns found in file.",
+        });
+    }
 
 
     // ====================================
@@ -284,17 +485,25 @@ if (
     if (
       req.body.mapping
     ) {
+
       try {
+
         mapping =
           JSON.parse(
             req.body.mapping
           );
-      } catch (error) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Invalid column mapping format.",
-        });
+
+      } catch (
+        error
+      ) {
+
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message:
+              "Invalid column mapping format.",
+          });
       }
     }
 
@@ -304,8 +513,11 @@ if (
     // ====================================
 
     if (
-      Object.keys(mapping).length === 0
+      Object.keys(
+        mapping
+      ).length === 0
     ) {
+
       mapping =
         generateAutoMapping(
           originalColumns
@@ -318,16 +530,22 @@ if (
     // ====================================
 
     const mappingValidation =
-      validateMapping(mapping);
+      validateMapping(
+        mapping
+      );
+
 
     if (
       !mappingValidation.isValid
     ) {
-      return res.status(400).json({
-        success: false,
-        message:
-          mappingValidation.message,
-      });
+
+      return res
+        .status(400)
+        .json({
+          success: false,
+          message:
+            mappingValidation.message,
+        });
     }
 
 
@@ -337,6 +555,7 @@ if (
 
     const dataset =
       await createDataset({
+
         datasetName:
           req.body.datasetName ||
           req.file.originalname,
@@ -345,210 +564,350 @@ if (
           req.file.originalname,
 
         fileType:
-          fileExtension === ".csv"
-            ? "csv"
-            : fileExtension === ".json"
-            ? "json"
-            : "xlsx",
+          fileExtension
+            .replace(
+              ".",
+              ""
+            ),
 
         totalRows: 0,
+
         validRows: 0,
+
         invalidRows: 0,
+
         columns: [],
+
       });
 
-      if (socketId && io) {
-  io.to(socketId).emit(
-    "upload-progress",
-    {
-      progress: 0,
-      message: "Processing started",
+
+    // ====================================
+    // SOCKET START EVENT
+    // ====================================
+
+    if (
+      socketId &&
+      io
+    ) {
+
+      io
+        .to(
+          socketId
+        )
+        .emit(
+          "upload-progress",
+          {
+            progress: 0,
+            message:
+              "Processing started",
+          }
+        );
     }
-  );
-}
+
 
     // ====================================
     // PROCESSING VARIABLES
     // ====================================
 
-    const BATCH_SIZE = 5000;
+    const BATCH_SIZE =
+      1000;
 
-    let totalRows = 0;
-    let validRows = 0;
-    let invalidRows = 0;
+    let totalRows =
+      0;
 
-    let batch = [];
+    let validRows =
+      0;
 
-    const previewRows = [];
+    let invalidRows =
+      0;
+
+    let batch =
+      [];
+
+    const previewRows =
+      [];
 
 
-    let totalRowsForProgress = 0;
+    // ====================================
+    // TOTAL ROWS FOR PROGRESS
+    // ====================================
 
-if (fileExtension === ".json") {
-  totalRowsForProgress = jsonRows.length;
-}
+    let totalRowsForProgress =
+      0;
 
-if (fileExtension === ".xlsx") {
-  totalRowsForProgress = xlsxRows.length;
-}
+
+    if (
+      fileExtension === ".json"
+    ) {
+
+      totalRowsForProgress =
+        jsonRows.length;
+    }
+
+
+    if (
+      fileExtension === ".xlsx"
+    ) {
+
+      totalRowsForProgress =
+        xlsxRows.length;
+    }
+
+
+    if (
+      fileExtension === ".csv"
+    ) {
+
+      totalRowsForProgress =
+        await countCSVRows(
+          filePath
+        );
+    }
 
 
     // ====================================
     // COMMON ROW PROCESSOR
     // ====================================
 
-    const processRow = async (
-      row
-    ) => {
+    const processRow =
+      async (
+        row
+      ) => {
 
-      totalRows++;
-
-    
-    // ====================================
-// REAL-TIME PROGRESS
-// ====================================
-
-if (
-  socketId &&
-  io &&
-  totalRowsForProgress > 0
-) {
-  const progress =
-    Math.round(
-      (totalRows /
-        totalRowsForProgress) *
-        100
-    );
-
-  io.to(socketId).emit(
-    "upload-progress",
-    {
-      progress,
-      message:
-        `Processing row ${totalRows} of ${totalRowsForProgress}`,
-    }
-  );
-}
+        totalRows++;
 
 
-      // Apply mapping
+        // ==================================
+        // REAL-TIME PROGRESS
+        // ==================================
 
-      const mappedRow =
-        Object.keys(mapping).length > 0
-          ? applyMapping(
-              row,
-              mapping
+        if (
+          socketId &&
+          io &&
+          totalRowsForProgress > 0
+        ) {
+
+          const progress =
+            Math.min(
+              Math.round(
+                (
+                  totalRows /
+                  totalRowsForProgress
+                ) *
+                100
+              ),
+              99
+            );
+
+
+          io
+            .to(
+              socketId
             )
-          : row;
+            .emit(
+              "upload-progress",
+              {
+                progress,
+
+                message:
+                  `Processing row ${totalRows} of ${totalRowsForProgress}`,
+              }
+            );
+        }
 
 
-      // Validate row
+        // ==================================
+        // APPLY MAPPING
+        // ==================================
 
-      const validation =
-        validateRow(
-          mappedRow
-        );
-
-
-      if (
-        validation.isValid
-      ) {
-        validRows++;
-      } else {
-        invalidRows++;
-      }
+        const mappedRow =
+          Object.keys(
+            mapping
+          ).length > 0
+            ? applyMapping(
+                row,
+                mapping
+              )
+            : row;
 
 
-      // Preview
+        // ==================================
+        // VALIDATE ROW
+        // ==================================
 
-      if (
-        previewRows.length < 100
-      ) {
-        previewRows.push({
-          data: mappedRow,
+        const validation =
+          validateRow(
+            mappedRow
+          );
+
+
+        if (
+          validation.isValid
+        ) {
+
+          validRows++;
+
+        } else {
+
+          invalidRows++;
+        }
+
+
+        // ==================================
+        // STORE PREVIEW
+        // ==================================
+
+        if (
+          previewRows.length <
+          100
+        ) {
+
+          previewRows.push({
+
+            data:
+              mappedRow,
+
+            isValid:
+              validation.isValid,
+
+            errors:
+              validation.errors,
+
+          });
+        }
+
+
+        // ==================================
+        // ADD TO BATCH
+        // ==================================
+
+        batch.push({
+
+          data:
+            mappedRow,
+
           isValid:
             validation.isValid,
+
           errors:
             validation.errors,
+
         });
-      }
 
 
-      // Add to batch
+        // ==================================
+        // BULK INSERT
+        // ==================================
 
-      batch.push({
-        data: mappedRow,
-        isValid:
-          validation.isValid,
-        errors:
-          validation.errors,
-      });
+        if (
+          batch.length >=
+          BATCH_SIZE
+        ) {
 
+          await insertRowsInBulk(
+            dataset._id,
+            batch
+          );
 
-      // Bulk insert
-
-      if (
-        batch.length >=
-        BATCH_SIZE
-      ) {
-        await insertRowsInBulk(
-          dataset._id,
-          batch
-        );
-
-        batch = [];
-      }
-    };
+          batch =
+            [];
+        }
+      };
 
 
     // ====================================
     // PROCESS JSON
     // ====================================
 
-if (
-  fileExtension === ".json"
-) {
+    if (
+      fileExtension === ".json"
+    ) {
 
-  console.log(
-    "Starting JSON row processing..."
-  );
+      console.log(
+        "Starting JSON processing..."
+      );
 
-  for (
-    const row of jsonRows
-  ) {
-    await processRow(
-      row
-    );
-  }
 
-  console.log(
-    "JSON row processing completed"
-  );
-}
+      const jsonStream =
+        Readable.from(
+          jsonRows,
+          {
+            objectMode: true,
+          }
+        );
+
+
+      const transformer =
+        new DataTransformStream({
+          transformCode,
+        });
+
+
+      const databaseWriter =
+        createDatabaseWriter(
+          processRow
+        );
+
+
+      await pipeline(
+        jsonStream,
+        transformer,
+        databaseWriter
+      );
+
+
+      console.log(
+        `JSON processing completed: ${totalRows} rows`
+      );
+    }
 
 
     // ====================================
     // PROCESS XLSX
     // ====================================
 
-if (
-  fileExtension === ".xlsx"
-) {
+    if (
+      fileExtension === ".xlsx"
+    ) {
 
-  console.log(
-    "Starting XLSX row processing..."
-  );
+      console.log(
+        "Starting XLSX processing..."
+      );
 
-  for (
-    const row of xlsxRows
-  ) {
-    await processRow(row);
-  }
 
-  console.log(
-    "XLSX row processing completed"
-  );
-}
+      const xlsxStream =
+        Readable.from(
+          xlsxRows,
+          {
+            objectMode: true,
+          }
+        );
+
+
+      const transformer =
+        new DataTransformStream({
+          transformCode,
+        });
+
+
+      const databaseWriter =
+        createDatabaseWriter(
+          processRow
+        );
+
+
+      await pipeline(
+        xlsxStream,
+        transformer,
+        databaseWriter
+      );
+
+
+      console.log(
+        `XLSX processing completed: ${totalRows} rows`
+      );
+    }
+
 
     // ====================================
     // PROCESS CSV
@@ -558,11 +917,18 @@ if (
       fileExtension === ".csv"
     ) {
 
+      console.log(
+        "Starting CSV processing..."
+      );
+
+
       const fileStream =
         fs.createReadStream(
           filePath,
           {
-            encoding: "utf8",
+            encoding:
+              "utf8",
+
             highWaterMark:
               64 * 1024,
           }
@@ -574,29 +940,15 @@ if (
 
 
       const transformer =
-        new DataTransformStream();
+        new DataTransformStream({
+          transformCode,
+        });
 
 
       const databaseWriter =
-        new Writable({
-
-          objectMode: true,
-
-          write(
-            row,
-            encoding,
-            callback
-          ) {
-
-            processRow(row)
-              .then(() => {
-                callback();
-              })
-              .catch((error) => {
-                callback(error);
-              });
-          },
-        });
+        createDatabaseWriter(
+          processRow
+        );
 
 
       await pipeline(
@@ -604,6 +956,11 @@ if (
         parser,
         transformer,
         databaseWriter
+      );
+
+
+      console.log(
+        `CSV processing completed: ${totalRows} rows`
       );
     }
 
@@ -615,12 +972,14 @@ if (
     if (
       batch.length > 0
     ) {
+
       await insertRowsInBulk(
         dataset._id,
         batch
       );
 
-      batch = [];
+      batch =
+        [];
     }
 
 
@@ -629,8 +988,12 @@ if (
     // ====================================
 
     const mappedColumns =
-      Object.keys(mapping).length > 0
-        ? Object.values(mapping)
+      Object.keys(
+        mapping
+      ).length > 0
+        ? Object.values(
+            mapping
+          )
         : originalColumns;
 
 
@@ -654,108 +1017,149 @@ if (
       mapping;
 
 
-console.log(
-  "Saving dataset metadata..."
-);
+    console.log(
+      "Saving dataset metadata..."
+    );
 
-await dataset.save();
 
-console.log(
-  "Dataset metadata saved successfully"
-);
+    await dataset.save();
 
 
     console.log(
-      `${fileExtension.toUpperCase()} processing completed: ${totalRows} rows`
+      "Dataset metadata saved successfully"
     );
 
-console.log(
-  "Preparing success response..."
-);
 
-console.log(
-  "Sending success response to frontend..."
-);
+    // ====================================
+    // FINAL SOCKET EVENT
+    // ====================================
+
+    if (
+      socketId &&
+      io
+    ) {
+
+      io
+        .to(
+          socketId
+        )
+        .emit(
+          "upload-progress",
+          {
+            progress: 100,
+
+            message:
+              "Dataset processing completed",
+          }
+        );
+    }
+
 
     // ====================================
     // SUCCESS RESPONSE
     // ====================================
 
-    return res.status(200).json({
-      success: true,
+    return res
+      .status(200)
+      .json({
 
-      message:
-        "Dataset processed successfully",
+        success:
+          true,
 
-      dataset: {
-        datasetId:
-          dataset._id,
+        message:
+          "Dataset processed successfully",
 
-        datasetName:
-          dataset.datasetName,
+        dataset: {
 
-        originalFileName:
-          req.file.originalname,
+          datasetId:
+            dataset._id,
 
-        fileType:
-          dataset.fileType,
+          datasetName:
+            dataset.datasetName,
 
-        fileSize:
-          req.file.size,
+          originalFileName:
+            req.file.originalname,
 
-        totalRows,
+          fileType:
+            dataset.fileType,
 
-        validRows,
+          fileSize:
+            req.file.size,
 
-        invalidRows,
+          totalRows,
 
-        columns:
-          mappedColumns,
+          validRows,
 
-        mapping,
+          invalidRows,
 
-        preview:
-          previewRows,
-      },
-    });
+          columns:
+            mappedColumns,
 
-  } catch (error) {
+          mapping,
+
+          preview:
+            previewRows,
+
+        },
+      });
+
+
+  } catch (
+    error
+  ) {
 
     console.error(
       "Upload Error:",
       error
     );
 
+
     if (
       !res.headersSent
     ) {
-      return res.status(500).json({
-        success: false,
 
-        message:
-          "Dataset processing failed",
+      return res
+        .status(500)
+        .json({
 
-        error:
-          error.message,
-      });
+          success:
+            false,
+
+          message:
+            "Dataset processing failed",
+
+          error:
+            error.message,
+
+        });
     }
 
+
   } finally {
+
+    // ====================================
+    // DELETE TEMPORARY FILE
+    // ====================================
 
     if (
       filePath
     ) {
+
       fs.unlink(
         filePath,
-        (error) => {
+        (
+          error
+        ) => {
 
-          if (error) {
+          if (
+            error
+          ) {
+
             console.error(
               "Temporary file deletion failed:",
               error.message
             );
           }
-
         }
       );
     }

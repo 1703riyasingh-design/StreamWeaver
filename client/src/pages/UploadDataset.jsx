@@ -133,6 +133,9 @@ function UploadDataset() {
   const [mapping, setMapping] =
     useState({});
 
+  const [transformCode, setTransformCode] =
+  useState("");
+
   const [isUploading, setIsUploading] =
     useState(false);
 
@@ -480,6 +483,11 @@ try {
   );
 
   formData.append(
+  "transformCode",
+  transformCode
+);
+
+  formData.append(
     "socketId",
     socket.id
   );
@@ -644,6 +652,40 @@ const response = await fetch(
               }
             />
           )}
+
+          {columns.length > 0 && (
+  <div className="transform-section">
+
+    <h3>
+      Custom Transformation
+    </h3>
+
+    <p>
+      Write JavaScript code to transform
+      each row.
+    </p>
+
+    <textarea
+      className="transform-code-input"
+      value={transformCode}
+      onChange={(event) =>
+        setTransformCode(
+          event.target.value
+        )
+      }
+      placeholder={`Example:
+
+return {
+  ...row,
+  name: row.name
+    ? row.name.toUpperCase()
+    : ""
+};`}
+      rows={10}
+    />
+
+  </div>
+)}
 
 {isUploading && (
   <div className="upload-progress">
