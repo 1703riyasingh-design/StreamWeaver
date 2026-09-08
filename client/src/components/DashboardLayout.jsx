@@ -11,15 +11,12 @@ function DashboardLayout() {
 
   return (
     <div className="dashboard-layout">
-      {/* Hamburger Button - Mobile पर ही दिखेगा */}
-      <button className="hamburger-btn" onClick={toggleSidebar} aria-label="Toggle menu">
-        ☰
+      <button className="hamburger-btn" onClick={toggleSidebar} aria-label="Toggle navigation menu" aria-expanded={isSidebarOpen}>
+        <span aria-hidden="true">=</span>
       </button>
 
-      {/* Overlay - Sidebar खुलने पर डिम */}
       <div className={`sidebar-overlay ${isSidebarOpen ? "active" : ""}`} onClick={closeSidebar} />
 
-      {/* Sidebar - Wrapper for sliding */}
       <div className={`sidebar-wrapper ${isSidebarOpen ? "open" : ""}`}>
         <Sidebar closeSidebar={closeSidebar} />
       </div>

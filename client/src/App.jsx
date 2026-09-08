@@ -43,6 +43,17 @@ function App() {
             />
 
             <Route
+              path="/processing"
+              element={
+                <PlaceholderPage
+                  icon="o"
+                  title="Processing / Jobs"
+                  description="Track active dataset processing jobs and review completed validation runs."
+                />
+              }
+            />
+
+            <Route
               path="/media"
               element={
                 <PlaceholderPage

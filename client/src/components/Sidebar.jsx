@@ -1,4 +1,19 @@
 import { NavLink, useNavigate } from "react-router-dom";
+import "./Sidebar.css";
+
+const mainLinks = [
+  { to: "/dashboard", label: "Dashboard", icon: "D" },
+  { to: "/datasets", label: "Datasets", icon: "#" },
+  { to: "/upload-dataset", label: "Upload Dataset", icon: "^" },
+  { to: "/processing", label: "Processing / Jobs", icon: "o" },
+  { to: "/analytics", label: "Analytics", icon: "~" },
+  { to: "/streams", label: "Streams", icon: ">" },
+];
+
+const accountLinks = [
+  { to: "/profile", label: "Profile", icon: "U" },
+  { to: "/settings", label: "Settings", icon: "S" },
+];
 
 function Sidebar({ closeSidebar }) {
   const navigate = useNavigate();
@@ -6,116 +21,27 @@ function Sidebar({ closeSidebar }) {
   const handleLogout = () => {
     sessionStorage.removeItem("streamweaver_user");
     navigate("/");
+    closeSidebar?.();
   };
+
+  const renderLink = ({ to, label, icon }) => (
+    <NavLink key={to} to={to} className={({ isActive }) => `sidebar-link${isActive ? " active" : ""}`} onClick={closeSidebar}>
+      <span className="sidebar-link-icon" aria-hidden="true">{icon}</span>
+      <span>{label}</span>
+    </NavLink>
+  );
 
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
-        <span className="brand-icon">🎥</span>
-        <span className="brand-text">StreamWeaver</span>
+        <span className="sidebar-brand-mark" aria-hidden="true">SW</span>
+        <span><strong>StreamWeaver</strong><small>Data workspace</small></span>
       </div>
-
-      <nav className="sidebar-nav">
-        <span className="nav-label">Main Menu</span>
-
-        <NavLink
-          to="/dashboard"
-          className={({ isActive }) =>
-            isActive ? "active" : ""
-          }
-          onClick={closeSidebar}
-        >
-          <span className="nav-icon">📊</span>
-          Dashboard
-        </NavLink>
-
-        <NavLink
-          to="/streams"
-          className={({ isActive }) =>
-            isActive ? "active" : ""
-          }
-          onClick={closeSidebar}
-        >
-          <span className="nav-icon">📺</span>
-          Streams
-        </NavLink>
-
-        <NavLink
-          to="/media"
-          className={({ isActive }) =>
-            isActive ? "active" : ""
-          }
-          onClick={closeSidebar}
-        >
-          <span className="nav-icon">🎬</span>
-          Media Library
-        </NavLink>
-
-        <NavLink
-          to="/analytics"
-          className={({ isActive }) =>
-            isActive ? "active" : ""
-          }
-          onClick={closeSidebar}
-        >
-          <span className="nav-icon">📈</span>
-          Analytics
-        </NavLink>
-
-        <NavLink
-          to="/profile"
-          className={({ isActive }) =>
-            isActive ? "active" : ""
-          }
-          onClick={closeSidebar}
-        >
-          <span className="nav-icon">👤</span>
-          Profile
-        </NavLink>
-
-        <NavLink
-          to="/upload-dataset"
-          className={({ isActive }) =>
-            isActive ? "active" : ""
-          }
-          onClick={closeSidebar}
-        >
-          <span className="nav-icon">📦</span>
-          Upload Dataset
-        </NavLink>
-
-        <NavLink
-          to="/datasets"
-          className={({ isActive }) =>
-            isActive ? "active" : ""
-          }
-          onClick={closeSidebar}
-        >
-          <span className="nav-icon">📋</span>
-          Datasets
-        </NavLink>
-
-        <NavLink
-          to="/settings"
-          className={({ isActive }) =>
-            isActive ? "active" : ""
-          }
-          onClick={closeSidebar}
-        >
-          <span className="nav-icon">⚙️</span>
-          Settings
-        </NavLink>
+      <nav className="sidebar-nav" aria-label="Primary navigation">
+        <div className="sidebar-section"><span className="sidebar-section-label">Main</span>{mainLinks.map(renderLink)}</div>
+        <div className="sidebar-section sidebar-account"><span className="sidebar-section-label">Account</span>{accountLinks.map(renderLink)}</div>
       </nav>
-
-      <div className="sidebar-footer">
-        <button
-          className="logout-btn"
-          onClick={handleLogout}
-        >
-          <span className="logout-icon">🚪</span>
-          Logout
-        </button>
-      </div>
+      <div className="sidebar-footer"><button className="sidebar-link sidebar-logout" type="button" onClick={handleLogout}><span className="sidebar-link-icon" aria-hidden="true">&gt;</span><span>Logout</span></button></div>
     </aside>
   );
 }
