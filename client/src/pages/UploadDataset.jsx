@@ -51,15 +51,46 @@ function buildDefaultMapping(columns = []) {
   }, {});
 }
 
+function getLoggedInAccount() {
+  const sessionUserId =
+    sessionStorage.getItem("streamweaver_user_id") || "";
+  const sessionUser =
+    sessionStorage.getItem("streamweaver_user") || "";
+
+  try {
+    const users = JSON.parse(
+      localStorage.getItem("users") || "[]"
+    );
+
+    return (Array.isArray(users) ? users : []).find((user) => {
+      const emailName = String(user.email || "").split("@")[0];
+
+      return (
+        String(user.userId || user.id || "") === sessionUserId ||
+        emailName.toLowerCase() === sessionUser.toLowerCase()
+      );
+    }) || {};
+  } catch (error) {
+    console.error("Failed to read logged-in account:", error);
+    return {};
+  }
+}
+
 function ColumnMappingPanel({
   datasetColumns,
   fieldMapping,
   onMappingChange,
 }) {
-  const loggedInUserId =
-    sessionStorage.getItem("streamweaver_user_id") ||
-    sessionStorage.getItem("streamweaver_user") ||
-    "Logged-in user ID";
+  const account = getLoggedInAccount();
+  const accountValues = {
+    id:
+      account.userId ||
+      sessionStorage.getItem("streamweaver_user_id") ||
+      "Logged-in user ID",
+    name: account.name || "Logged-in user name",
+    city: account.city || "Logged-in user city",
+    email: account.email || "Logged-in user email",
+  };
 
   const mappedIdColumn =
     fieldMapping.id ||
@@ -106,7 +137,7 @@ function ColumnMappingPanel({
                     key={column}
                     value={column}
                   >
-                    {field.key === "id" ? loggedInUserId : column}
+                    {accountValues[field.key]}
                   </option>
                 ))}
             </select>
