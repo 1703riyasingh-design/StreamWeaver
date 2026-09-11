@@ -146,60 +146,36 @@ const getCSVHeaders = async (
 // COUNT CSV ROWS FOR PROGRESS
 // ========================================
 
-const countCSVRows = async (
-  filePath
-) => {
-  return new Promise(
-    (resolve, reject) => {
+const countCSVRows = async (filePath) => {
+  return new Promise((resolve, reject) => {
+    const stream = fs.createReadStream(filePath, {
+      encoding: "utf8",
+    });
 
-      const stream =
-        fs.createReadStream(
-          filePath,
-          {
-            encoding: "utf8",
-          }
-        );
+    let rows = 0;
+    let leftover = "";
 
-      let rows = 0;
+    stream.on("data", (chunk) => {
+      const data = leftover + chunk;
+      const lines = data.split("\n");
 
-      stream.on(
-        "data",
-        (chunk) => {
+      leftover = lines.pop() || "";
 
-          for (
-            let i = 0;
-            i < chunk.length;
-            i++
-          ) {
-            if (
-              chunk[i] === "\n"
-            ) {
-              rows++;
-            }
-          }
-        }
-      );
+      rows += lines.length;
+    });
 
-      stream.on(
-        "end",
-        () => {
+    stream.on("end", () => {
+      // Count the final line if it contains data
+      if (leftover.trim() !== "") {
+        rows++;
+      }
 
-          // Remove header row
-          resolve(
-            Math.max(
-              rows - 1,
-              0
-            )
-          );
-        }
-      );
+      // First line is the CSV header
+      resolve(Math.max(rows - 1, 0));
+    });
 
-      stream.on(
-        "error",
-        reject
-      );
-    }
-  );
+    stream.on("error", reject);
+  });
 };
 
 
@@ -350,7 +326,7 @@ const uploadFile = async (
 
     let originalColumns = [];
 
-    let jsonRows = [];
+    let parsedJSON = null;
 
     let xlsxRows = [];
 
@@ -384,37 +360,20 @@ const uploadFile = async (
       fileExtension === ".json"
     ) {
 
-      console.log(
-        "Starting JSON parsing..."
-      );
+      console.log("Starting JSON parsing...");
 
-      const parsedJSON =
-        await parseJSONFile(
-          filePath
-        );
+parsedJSON = await parseJSONFile(filePath);
 
-      jsonRows =
-        parsedJSON.rows;
+originalColumns = parsedJSON.columns;
 
-      originalColumns =
-        parsedJSON.columns;
-
-
-      if (
-        !Array.isArray(
-          jsonRows
-        ) ||
-        jsonRows.length === 0
-      ) {
-
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message:
-              "JSON file is empty or invalid.",
-          });
-      }
+if (
+  !Array.isArray(originalColumns) ||
+  originalColumns.length === 0
+) {
+  return res.status(400).json({
+    message: "JSON file does not contain any valid rows",
+  });
+}
     }
 
 
@@ -632,38 +591,16 @@ const uploadFile = async (
     // TOTAL ROWS FOR PROGRESS
     // ====================================
 
-    let totalRowsForProgress =
-      0;
+let totalRowsForProgress = 0;
 
-
-    if (
-      fileExtension === ".json"
-    ) {
-
-      totalRowsForProgress =
-        jsonRows.length;
-    }
-
-
-    if (
-      fileExtension === ".xlsx"
-    ) {
-
-      totalRowsForProgress =
-        xlsxRows.length;
-    }
-
-
-    if (
-      fileExtension === ".csv"
-    ) {
-
-      totalRowsForProgress =
-        await countCSVRows(
-          filePath
-        );
-    }
-
+if (fileExtension === ".json") {
+  totalRowsForProgress = parsedJSON.rowCount;
+} else if (fileExtension === ".xlsx") {
+  totalRowsForProgress = xlsxRows.length;
+} else {
+  totalRowsForProgress =
+    await countCSVRows(filePath);
+}
 
     // ====================================
     // COMMON ROW PROCESSOR
@@ -700,19 +637,31 @@ const uploadFile = async (
             );
 
 
-          io
-            .to(
-              socketId
-            )
-            .emit(
-              "upload-progress",
-              {
-                progress,
+         io
+  .to(
+    socketId
+  )
+  .emit(
+    "upload-progress",
+    {
+      progress,
 
-                message:
-                  `Processing row ${totalRows} of ${totalRowsForProgress}`,
-              }
-            );
+      message:
+        `Processing row ${totalRows.toLocaleString()} of ${totalRowsForProgress.toLocaleString()}`,
+
+      rowsProcessed:
+        totalRows,
+
+      totalRows:
+        totalRowsForProgress,
+
+      datasetName:
+        dataset.datasetName,
+
+      fileName:
+        req.file.originalname,
+    }
+  );
         }
 
 
@@ -729,6 +678,8 @@ const uploadFile = async (
                 mapping
               )
             : row;
+
+         
 
 
         // ==================================
@@ -829,31 +780,21 @@ const uploadFile = async (
 
 
       const jsonStream =
-        Readable.from(
-          jsonRows,
-          {
-            objectMode: true,
-          }
-        );
+  parsedJSON.stream;
 
+const transformer =
+  new DataTransformStream({
+    transformCode,
+  });
 
-      const transformer =
-        new DataTransformStream({
-          transformCode,
-        });
+const databaseWriter =
+  createDatabaseWriter(processRow);
 
-
-      const databaseWriter =
-        createDatabaseWriter(
-          processRow
-        );
-
-
-      await pipeline(
-        jsonStream,
-        transformer,
-        databaseWriter
-      );
+await pipeline(
+  jsonStream,
+  transformer,
+  databaseWriter
+);
 
 
       console.log(

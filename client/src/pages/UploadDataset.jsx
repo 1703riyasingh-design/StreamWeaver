@@ -4,89 +4,16 @@ import * as XLSX from "xlsx";
 import socket from "../socket";
 import "./UploadDataset.css";
 
-const REQUIRED_FIELDS = [
-  { key: "id", label: "ID" },
-  { key: "name", label: "Name" },
-  { key: "city", label: "City" },
-  { key: "email", label: "Email" },
-];
-
-const CITY_OPTIONS = [
-  "Bengaluru",
-  "Mysore",
-  "Mumbai",
-  "Delhi",
-  "Hyderabad",
-  "Chennai",
-  "Pune",
-  "Kolkata",
-  "Ahmedabad",
-  "Jaipur",
-];
-
-function normalizeColumnName(value) {
-  return String(value ?? "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
-}
-
 function buildDefaultMapping(columns = []) {
-  const normalizedColumns = columns.map((column) =>
-    String(column).trim()
-  );
+  return columns.reduce((mapping, column) => {
+    const cleanColumn = String(column).trim();
 
-  return REQUIRED_FIELDS.reduce((mapping, field) => {
-    const keywords = {
-  id: [
-    "id",
-    "userid",
-    "user_id",
-  ],
-      name: ["name", "full name", "fullname"],
-      city: ["city", "location"],
-      email: ["email"],
-    }[field.key] || [field.label];
-
-    const match = normalizedColumns.find((column) => {
-      const normalizedColumn = normalizeColumnName(column);
-
-      return keywords.some(
-        (keyword) =>
-          normalizedColumn === normalizeColumnName(keyword) ||
-          normalizedColumn.includes(normalizeColumnName(keyword))
-      );
-    });
-
-    mapping[field.key] = match || "";
+    if (cleanColumn) {
+      mapping[cleanColumn] = cleanColumn;
+    }
 
     return mapping;
   }, {});
-}
-
-function getLoggedInAccount() {
-  const sessionUserId =
-    sessionStorage.getItem("streamweaver_user_id") || "";
-  const sessionUser =
-    sessionStorage.getItem("streamweaver_user") || "";
-
-  try {
-    const users = JSON.parse(
-      localStorage.getItem("users") || "[]"
-    );
-
-    return (Array.isArray(users) ? users : []).find((user) => {
-      const emailName = String(user.email || "").split("@")[0];
-
-      return (
-        String(user.userId || user.id || "") === sessionUserId ||
-        emailName.toLowerCase() === sessionUser.toLowerCase()
-      );
-    }) || {};
-  } catch (error) {
-    console.error("Failed to read logged-in account:", error);
-    return {};
-  }
 }
 
 function ColumnMappingPanel({
@@ -94,110 +21,89 @@ function ColumnMappingPanel({
   fieldMapping,
   onMappingChange,
 }) {
-  const account = getLoggedInAccount();
-  const accountValues = {
-    id:
-      account.userId ||
-      sessionStorage.getItem("streamweaver_user_id") ||
-      "Logged-in user ID",
-    name: account.name || "Logged-in user name",
-    city: account.city || "Logged-in user city",
-    email: account.email || "Logged-in user email",
-  };
-
-  const mappedIdColumn =
-    fieldMapping.id ||
-    datasetColumns.find((column) =>
-      normalizeColumnName(column).includes("id")
-    ) ||
-    "";
-
-  const mappedColumns = {
-    id: [
-      `${account.name || "User"} (${accountValues.id})`,
-    ],
-    name: [accountValues.name],
-    city: [
-      accountValues.city,
-      ...CITY_OPTIONS,
-    ],
-    email: [accountValues.email],
-  };
-
-  const getDefaultSourceColumn = (fieldKey) =>
-    fieldMapping[fieldKey] ||
-    (fieldKey === "id" ? mappedIdColumn : datasetColumns[0]) ||
-    "";
-
   return (
     <div className="mapping-panel">
+
       <div className="mapping-header">
         <h3>Column Mapping</h3>
-        <span>Map your dataset columns</span>
+
+        <span>
+          Map source columns to destination fields
+        </span>
       </div>
 
       <div className="mapping-grid">
-        {REQUIRED_FIELDS.map((field) => (
+
+        {datasetColumns.map((sourceColumn) => (
           <div
             className="mapping-field"
-            key={field.key}
+            key={sourceColumn}
           >
-            <label htmlFor={`mapping-${field.key}`}>
-              {field.label}
+            <label>
+              {sourceColumn}
             </label>
 
+            <span className="mapping-arrow">
+              →
+            </span>
+
             <select
-              id={`mapping-${field.key}`}
-              value={getDefaultSourceColumn(field.key)}
-              onChange={(event) =>
-                onMappingChange(
-                  field.key,
-                  event.target.value
-                )
-              }
-            >
-              {(field.key === "id"
-                ? [mappedIdColumn || datasetColumns[0]]
-                : datasetColumns)
-                .filter(Boolean)
-                .flatMap((column) =>
-                  (mappedColumns[field.key] || [column]).map((displayValue) => ({
-                    column,
-                    displayValue,
-                  }))
-                )
-                .filter(({ displayValue }, index, options) =>
-                  options.findIndex((option) => option.displayValue === displayValue) === index
-                )
-                .map(({ column, displayValue }) => (
-                  <option
-                    key={`${column}-${displayValue}`}
-                    value={column}
-                  >
-                    {displayValue}
-                  </option>
-                ))}
-            </select>
+  value={
+    fieldMapping[sourceColumn] ??
+    sourceColumn
+  }
+  onChange={(event) =>
+    onMappingChange(
+      sourceColumn,
+      event.target.value
+    )
+  }
+>
+  <option value={sourceColumn}>
+    {sourceColumn}
+  </option>
+
+  <option value="id">id</option>
+  <option value="name">name</option>
+  <option value="email">email</option>
+  <option value="age">age</option>
+
+  {datasetColumns
+    .filter((column) => column !== sourceColumn)
+    .map((column) => (
+      <option key={column} value={column}>
+        {column}
+      </option>
+    ))}
+</select>
           </div>
         ))}
+
       </div>
 
       <div className="mapping-summary">
+
         <h4>Selected Mapping</h4>
 
         <ul>
-          {REQUIRED_FIELDS.map((field) => (
-            <li key={field.key}>
-              <strong>{field.label}</strong>
+          {datasetColumns.map((sourceColumn) => (
+            <li key={sourceColumn}>
+
+              <strong>
+                {sourceColumn}
+              </strong>
 
               {" → "}
 
-              {fieldMapping[field.key] ||
+              {fieldMapping[sourceColumn] ||
                 "Not selected"}
+
             </li>
           ))}
         </ul>
+
       </div>
+
     </div>
   );
 }
@@ -215,64 +121,92 @@ function UploadDataset() {
   const [mapping, setMapping] =
     useState({});
 
+  const [mappingConfirmed, setMappingConfirmed] =
+    useState(false);
+
+  const [showSuccessModal, setShowSuccessModal] =
+    useState(false);
+
   const [transformCode, setTransformCode] =
-  useState("");
+    useState("");
 
   const [isUploading, setIsUploading] =
     useState(false);
 
   const [uploadProgress, setUploadProgress] =
-  useState({
-    progress: 0,
-    message: "",
-  });
-
-
+    useState({
+      progress: 0,
+      message: "",
+    });
 
   const [errorMessage, setErrorMessage] =
     useState("");
 
- 
-
   const navigate = useNavigate();
 
- useEffect(() => {
-  const handleProgress = (data) => {
-    console.log(
-      "Upload progress received:",
-      data
-    );
+  // ==========================================
+  // SOCKET PROGRESS
+  // ==========================================
 
-    setUploadProgress({
-      progress: data.progress || 0,
-      message:
-        data.message ||
-        "Processing dataset...",
-    });
-  };
+  useEffect(() => {
+    const handleProgress = (data) => {
+      console.log(
+        "Upload progress received:",
+        data
+      );
 
-  socket.on(
-    "upload-progress",
-    handleProgress
-  );
+      setUploadProgress({
+        progress: data.progress || 0,
+        message:
+          data.message ||
+          "Processing dataset...",
+      });
+localStorage.setItem(
+  "streamweaverProcessingProgress",
+  JSON.stringify({
+    progress: data.progress || 0,
+    message: data.message || "Processing dataset...",
+    datasetName: datasetName || "Unnamed Dataset",
+    fileName: file?.name || "",
+    updatedAt: Date.now(),
+  })
+);
+    };
 
-  return () => {
-    socket.off(
+    socket.on(
       "upload-progress",
       handleProgress
     );
-  };
-}, []);
+
+    return () => {
+      socket.off(
+        "upload-progress",
+        handleProgress
+      );
+    };
+  }, [datasetName, file]);
+
+  // ==========================================
+  // MAPPING CHANGE
+  // ==========================================
 
   const handleMappingChange = (
-    fieldKey,
-    selectedColumn
+    sourceColumn,
+    targetField
   ) => {
     setMapping((current) => ({
       ...current,
-      [fieldKey]: selectedColumn,
+      [sourceColumn]: targetField,
     }));
+
+    // Mapping change hone par
+    // dobara confirmation required
+    setMappingConfirmed(false);
   };
+
+  // ==========================================
+  // FILE CHANGE
+  // ==========================================
 
   const handleFileChange = async (event) => {
     const selectedFile =
@@ -285,10 +219,17 @@ function UploadDataset() {
     setErrorMessage("");
     setColumns([]);
     setMapping({});
+    setMappingConfirmed(false);
+    setShowSuccessModal(false);
+    setUploadProgress({
+      progress: 0,
+      message: "",
+    });
 
     const fileName =
       selectedFile.name.toLowerCase();
 
+    // Supported formats
     if (
       !fileName.endsWith(".csv") &&
       !fileName.endsWith(".json") &&
@@ -306,9 +247,10 @@ function UploadDataset() {
     try {
       let extractedColumns = [];
 
-      // =========================
-      // CSV COLUMN EXTRACTION
-      // =========================
+      // ==========================================
+      // CSV
+      // ==========================================
+
       if (fileName.endsWith(".csv")) {
         const text =
           await selectedFile.text();
@@ -331,9 +273,10 @@ function UploadDataset() {
             .filter(Boolean);
       }
 
-      // =========================
-      // JSON COLUMN EXTRACTION
-      // =========================
+      // ==========================================
+      // JSON
+      // ==========================================
+
       else if (fileName.endsWith(".json")) {
         const text =
           await selectedFile.text();
@@ -345,7 +288,9 @@ function UploadDataset() {
 
         if (Array.isArray(jsonData)) {
           rows = jsonData;
-        } else if (
+        }
+
+        else if (
           jsonData &&
           typeof jsonData === "object"
         ) {
@@ -379,9 +324,10 @@ function UploadDataset() {
         ];
       }
 
-      // =========================
-      // XLSX COLUMN EXTRACTION
-      // =========================
+      // ==========================================
+      // XLSX
+      // ==========================================
+
       else if (fileName.endsWith(".xlsx")) {
         const arrayBuffer =
           await selectedFile.arrayBuffer();
@@ -434,6 +380,10 @@ function UploadDataset() {
             .filter(Boolean);
       }
 
+      // ==========================================
+      // CHECK COLUMNS
+      // ==========================================
+
       if (
         extractedColumns.length === 0
       ) {
@@ -442,11 +392,18 @@ function UploadDataset() {
         );
       }
 
+      // ==========================================
+      // SAVE FILE + COLUMNS
+      // ==========================================
+
       setFile(selectedFile);
 
       setColumns(
         extractedColumns
       );
+
+      // Default:
+      // source column → same destination name
 
       const defaultMapping =
         buildDefaultMapping(
@@ -466,6 +423,7 @@ function UploadDataset() {
       setFile(null);
       setColumns([]);
       setMapping({});
+      setMappingConfirmed(false);
 
       setErrorMessage(
         error.message ||
@@ -474,9 +432,23 @@ function UploadDataset() {
     }
   };
 
+  // ==========================================
+  // UPLOAD / PROCESS DATASET
+  // ==========================================
+
   const handleUpload = async () => {
     setErrorMessage("");
 
+    // Mapping confirmation required
+    if (!mappingConfirmed) {
+      setErrorMessage(
+        "Please confirm the column mapping before processing."
+      );
+
+      return;
+    }
+
+    // Dataset name
     if (!datasetName.trim()) {
       setErrorMessage(
         "Please enter a dataset name."
@@ -485,6 +457,7 @@ function UploadDataset() {
       return;
     }
 
+    // File
     if (!file) {
       setErrorMessage(
         "Please select a CSV, JSON or XLSX file."
@@ -493,6 +466,7 @@ function UploadDataset() {
       return;
     }
 
+    // Columns
     if (columns.length === 0) {
       setErrorMessage(
         "No columns found in the selected file."
@@ -501,13 +475,19 @@ function UploadDataset() {
       return;
     }
 
-    const mappingValues =
-      Object.values(mapping)
-        .filter(Boolean);
+    // ==========================================
+    // VALIDATE MAPPING
+    // ==========================================
 
-    if (
-      mappingValues.length === 0
-    ) {
+    const mappingEntries =
+      Object.entries(mapping)
+        .filter(
+          ([sourceColumn, targetField]) =>
+            String(sourceColumn).trim() &&
+            String(targetField).trim()
+        );
+
+    if (mappingEntries.length === 0) {
       setErrorMessage(
         "Please map at least one column."
       );
@@ -515,95 +495,127 @@ function UploadDataset() {
       return;
     }
 
-    const uniqueValues =
-      [
-        ...new Set(
-          mappingValues
-        ),
-      ];
+    const targetFields =
+      mappingEntries.map(
+        ([, targetField]) =>
+          String(targetField).trim()
+      );
+
+    const uniqueTargetFields = [
+      ...new Set(targetFields),
+    ];
 
     if (
-      uniqueValues.length !==
-      mappingValues.length
+      uniqueTargetFields.length !==
+      targetFields.length
     ) {
       setErrorMessage(
-        "Duplicate column mappings are not allowed."
+        "Duplicate destination fields are not allowed."
       );
 
       return;
     }
 
+    // ==========================================
+    // SOCKET
+    // ==========================================
 
-if (!socket.connected) {
-  socket.connect();
-}
-
-console.log(
-  "Socket ID before upload:",
-  socket.id
-);
-
-setUploadProgress({
-  progress: 0,
-  message: "Starting upload...",
-});
-
-setIsUploading(true);
-
-try {
-  const formData =
-    new FormData();
-
-  formData.append(
-    "file",
-    file
-  );
-
-  formData.append(
-    "datasetName",
-    datasetName.trim()
-  );
-
-  formData.append(
-  "transformCode",
-  transformCode
-);
-
-  formData.append(
-    "socketId",
-    socket.id
-  );
-
-  const backendMapping = {};
-
-  Object.entries(mapping).forEach(
-    ([targetField, sourceColumn]) => {
-      if (sourceColumn) {
-        backendMapping[sourceColumn] =
-          targetField;
-      }
+    if (!socket.connected) {
+      socket.connect();
     }
-  );
 
-  formData.append(
-    "mapping",
-    JSON.stringify(backendMapping)
-  );
+    console.log(
+      "Socket ID before upload:",
+      socket.id
+    );
 
-const response = await fetch(
-  "http://localhost:5000/api/upload",
-  {
-    method: "POST",
-    body: formData,
-  }
-);
+    setUploadProgress({
+      progress: 0,
+      message: "Starting upload...",
+    });
+
+    setIsUploading(true);
+
+    try {
+      const formData =
+        new FormData();
+
+      // File
+      formData.append(
+        "file",
+        file
+      );
+
+      // Dataset name
+      formData.append(
+        "datasetName",
+        datasetName.trim()
+      );
+
+      // Transformation code
+      formData.append(
+        "transformCode",
+        transformCode
+      );
+
+      // Socket ID
+      formData.append(
+        "socketId",
+        socket.id
+      );
+
+      // ==========================================
+      // SOURCE → DESTINATION MAPPING
+      // ==========================================
+
+      const backendMapping = {};
+
+      Object.entries(mapping).forEach(
+        ([sourceColumn, targetField]) => {
+          const cleanSource =
+            String(sourceColumn).trim();
+
+          const cleanTarget =
+            String(targetField).trim();
+
+          if (
+            cleanSource &&
+            cleanTarget
+          ) {
+            backendMapping[
+              cleanSource
+            ] = cleanTarget;
+          }
+        }
+      );
+
+      formData.append(
+        "mapping",
+        JSON.stringify(
+          backendMapping
+        )
+      );
+
+      // ==========================================
+      // API REQUEST
+      // ==========================================
+
+      const response =
+        await fetch(
+          "http://localhost:5000/api/upload",
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
       const result =
         await response.json();
 
       if (!response.ok) {
         throw new Error(
           result.message ||
-          "Upload failed"
+            "Upload failed"
         );
       }
 
@@ -612,13 +624,32 @@ const response = await fetch(
         result
       );
 
-      alert(
-        `Dataset "${result.dataset.datasetName}" uploaded successfully!`
-      );
 
-      navigate(
-        "/datasets"
-      );
+      const dataset = result.dataset;
+
+localStorage.setItem(
+  "streamweaverDatasetPreview",
+  JSON.stringify({
+    datasetId: dataset.datasetId,
+    datasetName: dataset.datasetName,
+    fileName: dataset.originalFileName,
+    rowCount: dataset.totalRows,
+    columnCount: dataset.columns.length,
+    columns: dataset.columns,
+    fieldMapping: dataset.mapping,
+    rows: dataset.preview.map((item) => ({
+      ...item.data,
+      _isValid: item.isValid,
+      _errors: item.errors,
+    })),
+  })
+);
+
+      // ==========================================
+      // SUCCESS MODAL
+      // ==========================================
+
+      setShowSuccessModal(true);
 
     } catch (error) {
       console.error(
@@ -636,12 +667,56 @@ const response = await fetch(
     }
   };
 
+  // ==========================================
+  // UPLOAD ANOTHER DATASET
+  // ==========================================
+
+  const handleUploadAnother = () => {
+    setShowSuccessModal(false);
+
+    setDatasetName("");
+
+    setFile(null);
+
+    setColumns([]);
+
+    setMapping({});
+
+    setMappingConfirmed(false);
+
+    setTransformCode("");
+
+    setUploadProgress({
+      progress: 0,
+      message: "",
+    });
+
+    setErrorMessage("");
+
+    const fileInput =
+      document.getElementById(
+        "dataset-file"
+      );
+
+    if (fileInput) {
+      fileInput.value = "";
+    }
+  };
+
+  // ==========================================
+  // UI
+  // ==========================================
+
   return (
     <div className="upload-page">
+
       <div className="upload-shell">
 
+        {/* HEADER */}
         <div className="upload-header">
+
           <div className="upload-title-wrap">
+
             <div className="upload-icon">
               📦
             </div>
@@ -649,23 +724,87 @@ const response = await fetch(
             <h1>
               Upload Dataset
             </h1>
+
           </div>
 
           <span className="upload-status">
-            Ready
+            {isUploading
+              ? "Processing"
+              : "Ready"}
           </span>
+
         </div>
 
         <div className="upload-body">
 
+          {/* STEPPER */}
+          <div className="upload-steps">
+
+            <div className="upload-step active">
+              <span>1</span>
+              <label>
+                Upload
+              </label>
+            </div>
+
+            <div className="step-line"></div>
+
+            <div
+              className={`upload-step ${
+                columns.length > 0
+                  ? "active"
+                  : ""
+              }`}
+            >
+              <span>2</span>
+              <label>
+                Map Columns
+              </label>
+            </div>
+
+            <div className="step-line"></div>
+
+            <div
+              className={`upload-step ${
+                mappingConfirmed
+                  ? "active"
+                  : ""
+              }`}
+            >
+              <span>3</span>
+              <label>
+                Confirm
+              </label>
+            </div>
+
+            <div className="step-line"></div>
+
+            <div
+              className={`upload-step ${
+                isUploading
+                  ? "active"
+                  : ""
+              }`}
+            >
+              <span>4</span>
+              <label>
+                Process
+              </label>
+            </div>
+
+          </div>
+
+          {/* DESCRIPTION */}
           <p className="upload-description">
             Upload your CSV, JSON or XLSX dataset,
             map columns, and process the data.
           </p>
 
+          {/* NAME + FILE */}
           <div className="upload-grid">
 
             <div className="upload-field">
+
               <label htmlFor="dataset-name">
                 Dataset Name
               </label>
@@ -682,14 +821,17 @@ const response = await fetch(
                   )
                 }
               />
+
             </div>
 
             <div className="upload-field">
+
               <label htmlFor="dataset-file">
                 Choose Dataset
               </label>
 
               <div className="upload-file-wrap">
+
                 <input
                   id="dataset-file"
                   className="upload-file-input"
@@ -699,12 +841,16 @@ const response = await fetch(
                     handleFileChange
                   }
                 />
+
               </div>
+
             </div>
 
           </div>
 
+          {/* FILE INFO */}
           <div className="upload-meta">
+
             {file && (
               <span className="file-chip">
                 Selected: {file.name}
@@ -714,8 +860,10 @@ const response = await fetch(
             <span className="file-format">
               CSV, JSON, XLSX
             </span>
+
           </div>
 
+          {/* ERROR */}
           {errorMessage && (
             <div
               className="upload-error"
@@ -725,6 +873,7 @@ const response = await fetch(
             </div>
           )}
 
+          {/* COLUMN MAPPING */}
           {columns.length > 0 && (
             <ColumnMappingPanel
               datasetColumns={columns}
@@ -735,27 +884,55 @@ const response = await fetch(
             />
           )}
 
+          {/* CONFIRM MAPPING */}
           {columns.length > 0 && (
-  <div className="transform-section">
+            <div className="mapping-confirm">
 
-    <h3>
-      Custom Transformation
-    </h3>
+              <button
+                type="button"
+                className="confirm-mapping-button"
+                onClick={() => {
+                  setErrorMessage("");
+                  setMappingConfirmed(true);
+                }}
+                disabled={isUploading}
+              >
+                {mappingConfirmed
+                  ? "✓ Mapping Confirmed"
+                  : "Confirm Mapping"}
+              </button>
 
-    <p>
-      Write JavaScript code to transform
-      each row.
-    </p>
+              {mappingConfirmed && (
+                <span className="mapping-confirmed-text">
+                  Mapping is ready for processing.
+                </span>
+              )}
 
-    <textarea
-      className="transform-code-input"
-      value={transformCode}
-      onChange={(event) =>
-        setTransformCode(
-          event.target.value
-        )
-      }
-      placeholder={`Example:
+            </div>
+          )}
+
+          {/* TRANSFORMATION */}
+          {columns.length > 0 && (
+            <div className="transform-section">
+
+              <h3>
+                Custom Transformation
+              </h3>
+
+              <p>
+                Write JavaScript code to transform
+                each row.
+              </p>
+
+              <textarea
+                className="transform-code-input"
+                value={transformCode}
+                onChange={(event) =>
+                  setTransformCode(
+                    event.target.value
+                  )
+                }
+                placeholder={`Example:
 
 return {
   ...row,
@@ -763,61 +940,117 @@ return {
     ? row.name.toUpperCase()
     : ""
 };`}
-      rows={10}
-    />
+                rows={10}
+              />
 
-  </div>
-)}
+            </div>
+          )}
 
-{isUploading && (
-  <div className="upload-progress">
+          {/* PROGRESS */}
+          {isUploading && (
+            <div className="upload-progress">
 
-    <div className="progress-info">
-      <span>
-        {uploadProgress.message ||
-          "Processing dataset..."}
-      </span>
+              <div className="progress-info">
 
-      <strong>
-        {uploadProgress.progress}%
-      </strong>
-    </div>
+                <span>
+                  {uploadProgress.message ||
+                    "Processing dataset..."}
+                </span>
 
-    <div className="progress-bar">
-      <div
-        className="progress-fill"
-        style={{
-          width: `${uploadProgress.progress}%`,
-        }}
-      />
-    </div>
+                <strong>
+                  {uploadProgress.progress}%
+                </strong>
 
-    <span className="progress-text">
-      Uploading and processing data...
-    </span>
+              </div>
 
-  </div>
-)}
+              <div className="progress-bar">
 
+                <div
+                  className="progress-bar-fill"
+                  style={{
+                    width: `${uploadProgress.progress}%`,
+                  }}
+                />
+
+              </div>
+
+              <span className="progress-text">
+                Uploading and processing data...
+              </span>
+
+            </div>
+          )}
+
+          {/* ACTION */}
           <div className="upload-actions">
+
             <button
               type="button"
               className="upload-button"
-              onClick={
-                handleUpload
-              }
+              onClick={handleUpload}
               disabled={
-                isUploading
+                isUploading ||
+                !mappingConfirmed
               }
             >
               {isUploading
                 ? "Processing..."
-                : "Upload Dataset"}
+                : mappingConfirmed
+                  ? "Process Dataset"
+                  : "Confirm Mapping First"}
             </button>
+
           </div>
 
         </div>
       </div>
+
+      {/* SUCCESS MODAL */}
+      {showSuccessModal && (
+        <div className="success-modal-overlay">
+
+          <div className="success-modal">
+
+            <div className="success-icon">
+              ✓
+            </div>
+
+            <h2>
+              Dataset Processed Successfully
+            </h2>
+
+            <p>
+              Your dataset has been uploaded and
+              processed successfully.
+            </p>
+
+            <div className="success-actions">
+
+              <button
+                type="button"
+                onClick={() =>
+                  navigate("/dataset-preview")
+                }
+              >
+                View Dataset
+              </button>
+
+              <button
+                type="button"
+                onClick={
+                  handleUploadAnother
+                }
+              >
+                Upload Another Dataset
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+      )}
+
     </div>
   );
 }

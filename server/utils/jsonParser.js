@@ -1,67 +1,101 @@
-const fs = require("fs/promises");
+const fs = require("fs");
 
 const parseJSONFile = async (filePath) => {
-  try {
-    const fileContent = await fs.readFile(filePath, "utf8");
+  const { streamArray } = await import(
+    "stream-json/streamers/stream-array.js"
+  );
 
-    const jsonData = JSON.parse(fileContent);
+  return new Promise((resolve, reject) => {
+    const columnsSet = new Set();
+    let rowCount = 0;
 
-    let rows = [];
+    // =========================================
+    // FIRST PASS
+    // Read JSON only to get columns + row count
+    // =========================================
 
-    // Case 1: JSON directly contains an array
-    if (Array.isArray(jsonData)) {
-      rows = jsonData;
-    }
+    const firstStream =
+      streamArray.withParserAsStream();
 
-    // Case 2: JSON is an object containing an array
-    else if (jsonData && typeof jsonData === "object") {
-      const nestedArray = Object.values(jsonData).find((value) =>
-        Array.isArray(value)
-      );
+    firstStream.on("data", ({ value }) => {
+      if (
+        value &&
+        typeof value === "object" &&
+        !Array.isArray(value)
+      ) {
+        rowCount++;
 
-      if (nestedArray) {
-        rows = nestedArray;
-      } else {
-        // Single object becomes one row
-        rows = [jsonData];
+        Object.keys(value).forEach((column) => {
+          columnsSet.add(column);
+        });
       }
-    }
+    });
 
-    // Invalid JSON structure
-    if (!Array.isArray(rows) || rows.length === 0) {
-      throw new Error("JSON file does not contain any valid rows");
-    }
+    firstStream.on("end", () => {
+      if (rowCount === 0) {
+        reject(
+          new Error(
+            "JSON file does not contain valid object records"
+          )
+        );
+        return;
+      }
 
-    // Only object rows are allowed
-    rows = rows.filter(
-      (row) =>
-        row &&
-        typeof row === "object" &&
-        !Array.isArray(row)
-    );
+      // =========================================
+      // SECOND PASS
+      // Create fresh streaming row stream
+      // =========================================
 
-    if (rows.length === 0) {
-      throw new Error(
-        "JSON file does not contain valid object records"
-      );
-    }
+      const rowStream =
+  streamArray.withParserAsStream();
 
-    // Extract all unique columns from JSON rows
-    const columns = [
-      ...new Set(
-        rows.flatMap((row) => Object.keys(row))
-      ),
-    ];
-
-    return {
-      rows,
-      columns,
-    };
-  } catch (error) {
-    throw new Error(
+rowStream.on("error", (error) => {
+  reject(
+    new Error(
       `JSON parsing failed: ${error.message}`
-    );
-  }
+    )
+  );
+});
+
+const { Transform } = require("stream");
+
+const valueStream = new Transform({
+  objectMode: true,
+
+  transform(item, encoding, callback) {
+    callback(null, item.value);
+  },
+});
+
+rowStream
+  .pipe(valueStream);
+
+fs.createReadStream(filePath, {
+  encoding: "utf8",
+  highWaterMark: 64 * 1024,
+}).pipe(rowStream);
+
+resolve({
+  columns: [...columnsSet],
+  rowCount,
+  stream: valueStream,
+});
+    });
+
+    firstStream.on("error", (error) => {
+      reject(
+        new Error(
+          `JSON parsing failed: ${error.message}`
+        )
+      );
+    });
+
+    // Start first streaming pass
+    fs.createReadStream(filePath, {
+      encoding: "utf8",
+      highWaterMark: 64 * 1024,
+    }).pipe(firstStream);
+  });
 };
 
 module.exports = parseJSONFile;

@@ -10,8 +10,12 @@ class DataTransformStream extends Transform {
 
     this.processedRows = 0;
 
+    // Empty / whitespace transformation ko disable rakho
     this.transformCode =
-      options.transformCode || null;
+      typeof options.transformCode === "string" &&
+      options.transformCode.trim()
+        ? options.transformCode.trim()
+        : null;
 
     this.isolate = null;
     this.context = null;
@@ -23,47 +27,90 @@ class DataTransformStream extends Transform {
   // ========================================
 
   async initializeSandbox() {
+    // No transformation
     if (!this.transformCode) {
       return;
     }
 
-    this.isolate = new ivm.Isolate({
-      memoryLimit: 128,
-    });
+    try {
+      this.isolate = new ivm.Isolate({
+        memoryLimit: 128,
+      });
 
-    this.context =
-      await this.isolate.createContext();
+      this.context =
+        await this.isolate.createContext();
 
-    const jail =
-      this.context.global;
+      const jail =
+        this.context.global;
 
-    await jail.set(
-      "global",
-      jail.derefInto()
-    );
+      await jail.set(
+        "global",
+        jail.derefInto()
+      );
 
-    const wrappedCode = `
-      function transformRow(row) {
-        ${this.transformCode}
+      /*
+       * IMPORTANT:
+       * User code is added using string concatenation,
+       * NOT a template literal.
+       *
+       * This prevents user backticks (`) from
+       * breaking the sandbox wrapper.
+       */
+      const wrappedCode =
+        "function transformRow(row) {\n" +
+        this.transformCode +
+        "\n}";
+
+      console.log(
+        "Initializing transformation sandbox..."
+      );
+
+      const script =
+        await this.isolate.compileScript(
+          wrappedCode
+        );
+
+      await script.run(
+        this.context
+      );
+
+      this.transformFunction =
+        await this.context.global.get(
+          "transformRow",
+          {
+            reference: true,
+          }
+        );
+
+      if (!this.transformFunction) {
+        throw new Error(
+          "Transformation function could not be initialized."
+        );
       }
-    `;
 
-    const script =
-      await this.isolate.compileScript(
-        wrappedCode
+      console.log(
+        "Transformation sandbox initialized successfully."
       );
 
-    await script.run(
-      this.context
-    );
-
-    this.transformFunction =
-      await this.context.global.get(
-        "transformRow",
-        {
-          reference: true,
+    } catch (error) {
+      // Important:
+      // Failed initialization ko clean karo
+      if (this.isolate) {
+        try {
+          this.isolate.dispose();
+        } catch (_) {
+          // Ignore cleanup error
         }
+      }
+
+      this.isolate = null;
+      this.context = null;
+      this.transformFunction = null;
+
+      throw new Error(
+        `Transformation code error: ${error.message}`
       );
+    }
   }
 
   // ========================================
@@ -80,7 +127,10 @@ class DataTransformStream extends Transform {
         ...row,
       };
 
-      // No custom transformation
+      // ========================================
+      // NO CUSTOM TRANSFORMATION
+      // ========================================
+
       if (!this.transformCode) {
         this.processedRows++;
 
@@ -91,12 +141,28 @@ class DataTransformStream extends Transform {
         return callback();
       }
 
-      // Initialize sandbox only once
-      if (!this.context) {
+      // ========================================
+      // INITIALIZE SANDBOX
+      // ========================================
+
+      if (
+        !this.context ||
+        !this.transformFunction
+      ) {
         await this.initializeSandbox();
       }
 
-      // Execute transformation safely
+      // Safety check
+      if (!this.transformFunction) {
+        throw new Error(
+          "Transformation function is not available."
+        );
+      }
+
+      // ========================================
+      // EXECUTE TRANSFORMATION
+      // ========================================
+
       const result =
         await this.transformFunction.apply(
           undefined,
@@ -114,7 +180,10 @@ class DataTransformStream extends Transform {
           }
         );
 
-      // Make sure transformation returns an object
+      // ========================================
+      // VALIDATE RESULT
+      // ========================================
+
       if (
         !result ||
         typeof result !== "object" ||
@@ -149,6 +218,10 @@ class DataTransformStream extends Transform {
       if (this.isolate) {
         this.isolate.dispose();
       }
+
+      this.isolate = null;
+      this.context = null;
+      this.transformFunction = null;
 
       callback();
 

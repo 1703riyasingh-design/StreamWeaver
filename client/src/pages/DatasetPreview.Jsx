@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { List } from "react-window";
 import { useNavigate } from "react-router-dom";
 import "./DatasetPreview.css";
 
@@ -33,7 +34,7 @@ function DatasetPreview() {
 
   const rows = preview?.rows ?? [];
   const fieldMapping = preview?.fieldMapping ?? {};
-  const previewRows = rows.slice(0, 10);
+ 
 
   if (!preview) {
     return (
@@ -93,30 +94,71 @@ function DatasetPreview() {
         {rows.length > 0 ? (
           <>
             <div className="table-caption">
-              Showing first {previewRows.length} of {rows.length} rows
+              Showing {rows.length.toLocaleString()} rows
             </div>
 
-            <div className="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    {columns.map((column) => (
-                      <th key={column}>{column}</th>
-                    ))}
-                  </tr>
-                </thead>
+         <div className="table-container">
+  <div
+    className="virtual-table"
+    style={{
+      width: "100%",
+      overflow: "hidden",
+    }}
+  >
+    {/* Header */}
+    <div
+      className="virtual-table-header"
+      style={{
+        display: "grid",
+        gridTemplateColumns: `repeat(${columns.length}, minmax(150px, 1fr))`,
+      }}
+    >
+      {columns.map((column) => (
+        <div className="virtual-table-cell" key={column}>
+          {column}
+        </div>
+      ))}
+    </div>
 
-                <tbody>
-                  {previewRows.map((row, index) => (
-                    <tr key={`${preview.fileName}-${index}`}>
-                      {columns.map((column) => (
-                        <td key={`${column}-${index}`}>{String(row[column] ?? "")}</td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+    {/* Virtualized Rows */}
+    <List
+      rowCount={rows.length}
+      rowHeight={48}
+      rowProps={{
+        rows,
+        columns,
+        fileName: preview.fileName,
+      }}
+      style={{
+        height: 400,
+        width: "100%",
+      }}
+      rowComponent={({ index, style, rows, columns, fileName }) => {
+        const row = rows[index];
+
+        return (
+          <div
+            className="virtual-table-row"
+            style={{
+              ...style,
+              display: "grid",
+              gridTemplateColumns: `repeat(${columns.length}, minmax(150px, 1fr))`,
+            }}
+          >
+            {columns.map((column) => (
+              <div
+                className="virtual-table-cell"
+                key={`${fileName}-${index}-${column}`}
+              >
+                {String(row[column] ?? "")}
+              </div>
+            ))}
+          </div>
+        );
+      }}
+    />
+  </div>
+</div>
           </>
         ) : (
           <div className="empty-state-panel">

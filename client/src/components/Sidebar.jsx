@@ -5,14 +5,13 @@ const mainLinks = [
   { to: "/dashboard", label: "Dashboard", icon: "D" },
   { to: "/datasets", label: "Datasets", icon: "#" },
   { to: "/upload-dataset", label: "Upload Dataset", icon: "^" },
-  { to: "/processing", label: "Processing / Jobs", icon: "o" },
-  { to: "/analytics", label: "Analytics", icon: "~" },
-  { to: "/streams", label: "Streams", icon: ">" },
+ 
+
 ];
 
 const accountLinks = [
   { to: "/profile", label: "Profile", icon: "U" },
-  { to: "/settings", label: "Settings", icon: "S" },
+
 ];
 
 function Sidebar({ closeSidebar }) {

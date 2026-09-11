@@ -11,6 +11,7 @@ import PlaceholderPage from "./pages/PlaceholderPage";
 import SettingsPage from "./pages/SettingsPage";
 import SecuritySettings from "./pages/SecuritySettings";
 import DatasetDetails from "./pages/DatasetDetails";
+import ProfilePage from "./pages/ProfilePage";
 import NotificationSettings from "./pages/NotificationSettings";
 
 function App() {
@@ -26,33 +27,9 @@ function App() {
 
             <Route path="/dashboard" element={<Dashboard />} />
 
-            <Route
-              path="/streams"
-              element={
-                <PlaceholderPage
-                  icon="📺"
-                  title="Streams"
-                  description="Live sessions, scheduled broadcasts, and content delivery status across all channels."
-                  metrics={[
-                    { label: "Live now", value: "14" },
-                    { label: "Scheduled", value: "27" },
-                    { label: "Avg uptime", value: "99.4%" },
-                  ]}
-                />
-              }
-            />
+          
 
-            <Route
-              path="/processing"
-              element={
-                <PlaceholderPage
-                  icon="o"
-                  title="Processing / Jobs"
-                  description="Track active dataset processing jobs and review completed validation runs."
-                />
-              }
-            />
-
+           
             <Route
               path="/media"
               element={
@@ -86,20 +63,9 @@ function App() {
             />
 
             <Route
-              path="/profile"
-              element={
-                <PlaceholderPage
-                  icon="👤"
-                  title="Profile"
-                  description="Review account details, team information, channel identity, and preferences."
-                  metrics={[
-                    { label: "Plan", value: "Pro" },
-                    { label: "Team", value: "8 members" },
-                    { label: "Status", value: "Active" },
-                  ]}
-                />
-              }
-            />
+  path="/profile"
+  element={<ProfilePage />}
+/>
 
             <Route
               path="/settings"

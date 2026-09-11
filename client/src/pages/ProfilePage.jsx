@@ -1,42 +1,72 @@
 import { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+
 import "./ProfilePage.css";
 
 function getCurrentUser() {
-  const sessionUser = sessionStorage.getItem("streamweaver_user") || "";
-  const sessionUserId = sessionStorage.getItem("streamweaver_user_id") || "";
+  const sessionUser =
+    sessionStorage.getItem("streamweaver_user") || "";
+
+  const sessionUserId =
+    sessionStorage.getItem("streamweaver_user_id") || "";
 
   try {
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
-    const storedUsers = Array.isArray(users) ? users : [];
+    const users = JSON.parse(
+      localStorage.getItem("users") || "[]"
+    );
+
+    const storedUsers =
+      Array.isArray(users) ? users : [];
+
     const currentUser = storedUsers.find((user) => {
-      const emailName = String(user.email || "").split("@")[0];
       return (
         String(user.userId || user.id || "") === sessionUserId ||
-        emailName.toLowerCase() === sessionUser.toLowerCase() ||
-        String(user.name || user.fullName || "").toLowerCase() === sessionUser.toLowerCase()
+        String(user.email || "").toLowerCase() ===
+          sessionUser.toLowerCase() ||
+        String(user.name || user.fullName || "").toLowerCase() ===
+          sessionUser.toLowerCase()
       );
     });
 
     return {
-      name: currentUser?.name || currentUser?.fullName || sessionUser || "StreamWeaver User",
-      email: currentUser?.email || `${sessionUser}@mail.com`,
-      city: currentUser?.city || currentUser?.location || "Not provided",
-      userId: currentUser?.userId || currentUser?.id || sessionUserId || "Not assigned",
+      name:
+        currentUser?.name ||
+        currentUser?.fullName ||
+        sessionUser ||
+        "StreamWeaver User",
+
+      email:
+        currentUser?.email ||
+        "Not provided",
+
+      role:
+        currentUser?.role ||
+        currentUser?.userRole ||
+        "User",
+
+      status:
+        currentUser?.status ||
+        "Active",
+
+      
     };
   } catch (error) {
-    console.error("Failed to read profile:", error);
+    console.error(
+      "Failed to read profile:",
+      error
+    );
+
     return {
       name: sessionUser || "StreamWeaver User",
-      email: `${sessionUser}@mail.com`,
-      city: "Not provided",
-      userId: sessionUserId || "Not assigned",
+      email: "Not provided",
+      role: "User",
+      status: "Active",
+      
     };
   }
 }
 
 function ProfilePage() {
-  const navigate = useNavigate();
+  
   const user = useMemo(() => getCurrentUser(), []);
   const initials = user.name
     .split(/\s+/)
@@ -74,24 +104,27 @@ function ProfilePage() {
             <strong>{user.email}</strong>
           </div>
           <div className="profile-detail">
-            <span>City</span>
-            <strong>{user.city}</strong>
-          </div>
-          <div className="profile-detail">
-            <span>User ID</span>
-            <strong>{user.userId}</strong>
-          </div>
+  <span>Role</span>
+  <strong>{user.role}</strong>
+</div>
+
+<div className="profile-detail">
+  <span>Account Status</span>
+  <strong>{user.status}</strong>
+</div>
+
+
         </div>
       </section>
 
-      <section className="profile-security-card">
+      {/* <section className="profile-security-card">
         <div>
           <span className="profile-kicker">Account security</span>
           <h2>Your account is protected</h2>
           <p>Password details are kept private and are never displayed here.</p>
         </div>
         <button type="button" onClick={() => navigate("/settings")}>Open settings</button>
-      </section>
+      </section> */}
     </div>
   );
 }
