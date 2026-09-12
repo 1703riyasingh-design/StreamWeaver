@@ -7,302 +7,190 @@ import "./UploadDataset.css";
 function buildDefaultMapping(columns = []) {
   return columns.reduce((mapping, column) => {
     const cleanColumn = String(column).trim();
-
     if (cleanColumn) {
       mapping[cleanColumn] = cleanColumn;
     }
-
     return mapping;
   }, {});
 }
 
-function ColumnMappingPanel({
-  datasetColumns,
-  fieldMapping,
-  onMappingChange,
-}) {
+function ColumnMappingPanel({ datasetColumns, fieldMapping, onMappingChange }) {
   return (
     <div className="mapping-panel">
-
       <div className="mapping-header">
         <h3>Column Mapping</h3>
-
-        <span>
-          Map source columns to destination fields
-        </span>
+        <span>Map source columns to destination fields</span>
       </div>
 
       <div className="mapping-grid">
-
         {datasetColumns.map((sourceColumn) => (
-          <div
-            className="mapping-field"
-            key={sourceColumn}
-          >
-            <label>
-              {sourceColumn}
-            </label>
-
-            <span className="mapping-arrow">
-              →
-            </span>
-
+          <div className="mapping-field" key={sourceColumn}>
+            <label>{sourceColumn}</label>
+            <span className="mapping-arrow">→</span>
             <select
-  value={
-    fieldMapping[sourceColumn] ??
-    sourceColumn
-  }
-  onChange={(event) =>
-    onMappingChange(
-      sourceColumn,
-      event.target.value
-    )
-  }
->
-  <option value={sourceColumn}>
-    {sourceColumn}
-  </option>
-
-  <option value="id">id</option>
-  <option value="name">name</option>
-  <option value="email">email</option>
-  <option value="age">age</option>
-
-  {datasetColumns
-    .filter((column) => column !== sourceColumn)
-    .map((column) => (
-      <option key={column} value={column}>
-        {column}
-      </option>
-    ))}
-</select>
+              value={fieldMapping[sourceColumn] ?? sourceColumn}
+              onChange={(event) =>
+                onMappingChange(sourceColumn, event.target.value)
+              }
+            >
+              <option value={sourceColumn}>{sourceColumn}</option>
+              <option value="id">id</option>
+              <option value="name">name</option>
+              <option value="email">email</option>
+              <option value="age">age</option>
+              {datasetColumns
+                .filter((column) => column !== sourceColumn)
+                .map((column) => (
+                  <option key={column} value={column}>
+                    {column}
+                  </option>
+                ))}
+            </select>
           </div>
         ))}
-
       </div>
 
       <div className="mapping-summary">
-
         <h4>Selected Mapping</h4>
-
         <ul>
           {datasetColumns.map((sourceColumn) => (
             <li key={sourceColumn}>
-
-              <strong>
-                {sourceColumn}
-              </strong>
-
+              <strong>{sourceColumn}</strong>
               {" → "}
-
-              {fieldMapping[sourceColumn] ||
-                "Not selected"}
-
+              {fieldMapping[sourceColumn] || "Not selected"}
             </li>
           ))}
         </ul>
-
       </div>
-
     </div>
   );
 }
 
 function UploadDataset() {
-  const [datasetName, setDatasetName] =
-    useState("");
-
-  const [file, setFile] =
-    useState(null);
-
-  const [columns, setColumns] =
-    useState([]);
-
-  const [mapping, setMapping] =
-    useState({});
-
-  const [mappingConfirmed, setMappingConfirmed] =
-    useState(false);
-
-  const [showSuccessModal, setShowSuccessModal] =
-    useState(false);
-
-  const [transformCode, setTransformCode] =
-    useState("");
-
-  const [isUploading, setIsUploading] =
-    useState(false);
-
-  const [uploadProgress, setUploadProgress] =
-    useState({
-      progress: 0,
-      message: "",
-    });
-
-  const [errorMessage, setErrorMessage] =
-    useState("");
+  const [datasetName, setDatasetName] = useState("");
+  const [file, setFile] = useState(null);
+  const [columns, setColumns] = useState([]);
+  const [mapping, setMapping] = useState({});
+  const [mappingConfirmed, setMappingConfirmed] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [transformCode, setTransformCode] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({
+    progress: 0,
+    message: "",
+  });
+  const [errorMessage, setErrorMessage] = useState("");
 
   const navigate = useNavigate();
 
   // ==========================================
+  // Determine current step
+  // ==========================================
+  const currentStep = (() => {
+    if (isUploading) return 4;
+    if (mappingConfirmed) return 3;
+    if (columns.length > 0) return 2;
+    return 1;
+  })();
+
+  // ==========================================
   // SOCKET PROGRESS
   // ==========================================
-
   useEffect(() => {
     const handleProgress = (data) => {
-      console.log(
-        "Upload progress received:",
-        data
-      );
-
       setUploadProgress({
         progress: data.progress || 0,
-        message:
-          data.message ||
-          "Processing dataset...",
+        message: data.message || "Processing dataset...",
       });
-localStorage.setItem(
-  "streamweaverProcessingProgress",
-  JSON.stringify({
-    progress: data.progress || 0,
-    message: data.message || "Processing dataset...",
-    datasetName: datasetName || "Unnamed Dataset",
-    fileName: file?.name || "",
-    updatedAt: Date.now(),
-  })
-);
+      localStorage.setItem(
+        "streamweaverProcessingProgress",
+        JSON.stringify({
+          progress: data.progress || 0,
+          message: data.message || "Processing dataset...",
+          datasetName: datasetName || "Unnamed Dataset",
+          fileName: file?.name || "",
+          updatedAt: Date.now(),
+        })
+      );
     };
 
-    socket.on(
-      "upload-progress",
-      handleProgress
-    );
+    socket.on("upload-progress", handleProgress);
 
     return () => {
-      socket.off(
-        "upload-progress",
-        handleProgress
-      );
+      socket.off("upload-progress", handleProgress);
     };
   }, [datasetName, file]);
 
   // ==========================================
   // MAPPING CHANGE
   // ==========================================
-
-  const handleMappingChange = (
-    sourceColumn,
-    targetField
-  ) => {
+  const handleMappingChange = (sourceColumn, targetField) => {
     setMapping((current) => ({
       ...current,
       [sourceColumn]: targetField,
     }));
-
-    // Mapping change hone par
-    // dobara confirmation required
     setMappingConfirmed(false);
   };
 
   // ==========================================
   // FILE CHANGE
   // ==========================================
-
   const handleFileChange = async (event) => {
-    const selectedFile =
-      event.target.files[0];
+    const selectedFile = event.target.files[0];
 
-    if (!selectedFile) {
-      return;
-    }
+    if (!selectedFile) return;
 
     setErrorMessage("");
     setColumns([]);
     setMapping({});
     setMappingConfirmed(false);
     setShowSuccessModal(false);
-    setUploadProgress({
-      progress: 0,
-      message: "",
-    });
+    setUploadProgress({ progress: 0, message: "" });
 
-    const fileName =
-      selectedFile.name.toLowerCase();
+    const fileName = selectedFile.name.toLowerCase();
 
-    // Supported formats
     if (
       !fileName.endsWith(".csv") &&
       !fileName.endsWith(".json") &&
       !fileName.endsWith(".xlsx")
     ) {
-      setErrorMessage(
-        "Only CSV, JSON and XLSX files are supported."
-      );
-
+      setErrorMessage("Only CSV, JSON and XLSX files are supported.");
       setFile(null);
-
       return;
     }
 
     try {
       let extractedColumns = [];
 
-      // ==========================================
       // CSV
-      // ==========================================
-
       if (fileName.endsWith(".csv")) {
-        const text =
-          await selectedFile.text();
-
-        const firstLine =
-          text.split(/\r?\n/)[0];
+        const text = await selectedFile.text();
+        const firstLine = text.split(/\r?\n/)[0];
 
         if (!firstLine) {
-          throw new Error(
-            "CSV file is empty or invalid."
-          );
+          throw new Error("CSV file is empty or invalid.");
         }
 
-        extractedColumns =
-          firstLine
-            .split(",")
-            .map((column) =>
-              column.trim()
-            )
-            .filter(Boolean);
+        extractedColumns = firstLine
+          .split(",")
+          .map((column) => column.trim())
+          .filter(Boolean);
       }
 
-      // ==========================================
       // JSON
-      // ==========================================
-
       else if (fileName.endsWith(".json")) {
-        const text =
-          await selectedFile.text();
-
-        const jsonData =
-          JSON.parse(text);
+        const text = await selectedFile.text();
+        const jsonData = JSON.parse(text);
 
         let rows = [];
 
         if (Array.isArray(jsonData)) {
           rows = jsonData;
-        }
-
-        else if (
-          jsonData &&
-          typeof jsonData === "object"
-        ) {
-          const nestedArray =
-            Object.values(jsonData).find(
-              (value) =>
-                Array.isArray(value)
-            );
-
-          rows =
-            nestedArray ||
-            [jsonData];
+        } else if (jsonData && typeof jsonData === "object") {
+          const nestedArray = Object.values(jsonData).find((value) =>
+            Array.isArray(value)
+          );
+          rows = nestedArray || [jsonData];
         }
 
         if (rows.length === 0) {
@@ -314,9 +202,7 @@ localStorage.setItem(
         extractedColumns = [
           ...new Set(
             rows.flatMap((row) =>
-              row &&
-              typeof row === "object" &&
-              !Array.isArray(row)
+              row && typeof row === "object" && !Array.isArray(row)
                 ? Object.keys(row)
                 : []
             )
@@ -324,551 +210,273 @@ localStorage.setItem(
         ];
       }
 
-      // ==========================================
       // XLSX
-      // ==========================================
-
       else if (fileName.endsWith(".xlsx")) {
-        const arrayBuffer =
-          await selectedFile.arrayBuffer();
-
-        const workbook =
-          XLSX.read(
-            arrayBuffer,
-            {
-              type: "array",
-            }
-          );
-
-        const firstSheetName =
-          workbook.SheetNames[0];
+        const arrayBuffer = await selectedFile.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: "array" });
+        const firstSheetName = workbook.SheetNames[0];
 
         if (!firstSheetName) {
-          throw new Error(
-            "XLSX file does not contain any sheet."
-          );
+          throw new Error("XLSX file does not contain any sheet.");
         }
 
-        const worksheet =
-          workbook.Sheets[
-            firstSheetName
-          ];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const rows = XLSX.utils.sheet_to_json(worksheet, {
+          header: 1,
+          defval: "",
+        });
 
-        const rows =
-          XLSX.utils.sheet_to_json(
-            worksheet,
-            {
-              header: 1,
-              defval: "",
-            }
-          );
-
-        if (
-          !rows.length ||
-          !rows[0].length
-        ) {
-          throw new Error(
-            "XLSX file is empty or invalid."
-          );
+        if (!rows.length || !rows[0].length) {
+          throw new Error("XLSX file is empty or invalid.");
         }
 
-        extractedColumns =
-          rows[0]
-            .map((column) =>
-              String(column).trim()
-            )
-            .filter(Boolean);
+        extractedColumns = rows[0]
+          .map((column) => String(column).trim())
+          .filter(Boolean);
       }
 
-      // ==========================================
-      // CHECK COLUMNS
-      // ==========================================
-
-      if (
-        extractedColumns.length === 0
-      ) {
-        throw new Error(
-          "No columns found in the selected file."
-        );
+      if (extractedColumns.length === 0) {
+        throw new Error("No columns found in the selected file.");
       }
-
-      // ==========================================
-      // SAVE FILE + COLUMNS
-      // ==========================================
 
       setFile(selectedFile);
-
-      setColumns(
-        extractedColumns
-      );
-
-      // Default:
-      // source column → same destination name
-
-      const defaultMapping =
-        buildDefaultMapping(
-          extractedColumns
-        );
-
-      setMapping(
-        defaultMapping
-      );
-
+      setColumns(extractedColumns);
+      setMapping(buildDefaultMapping(extractedColumns));
     } catch (error) {
-      console.error(
-        "File read error:",
-        error
-      );
-
+      console.error("File read error:", error);
       setFile(null);
       setColumns([]);
       setMapping({});
       setMappingConfirmed(false);
-
       setErrorMessage(
-        error.message ||
-          "Failed to read the selected file."
+        error.message || "Failed to read the selected file."
       );
     }
   };
 
   // ==========================================
-  // UPLOAD / PROCESS DATASET
+  // UPLOAD
   // ==========================================
-
   const handleUpload = async () => {
     setErrorMessage("");
 
-    // Mapping confirmation required
     if (!mappingConfirmed) {
       setErrorMessage(
         "Please confirm the column mapping before processing."
       );
-
       return;
     }
 
-    // Dataset name
     if (!datasetName.trim()) {
-      setErrorMessage(
-        "Please enter a dataset name."
-      );
-
+      setErrorMessage("Please enter a dataset name.");
       return;
     }
 
-    // File
     if (!file) {
-      setErrorMessage(
-        "Please select a CSV, JSON or XLSX file."
-      );
-
+      setErrorMessage("Please select a CSV, JSON or XLSX file.");
       return;
     }
 
-    // Columns
     if (columns.length === 0) {
-      setErrorMessage(
-        "No columns found in the selected file."
-      );
-
+      setErrorMessage("No columns found in the selected file.");
       return;
     }
 
-    // ==========================================
-    // VALIDATE MAPPING
-    // ==========================================
-
-    const mappingEntries =
-      Object.entries(mapping)
-        .filter(
-          ([sourceColumn, targetField]) =>
-            String(sourceColumn).trim() &&
-            String(targetField).trim()
-        );
+    const mappingEntries = Object.entries(mapping).filter(
+      ([sourceColumn, targetField]) =>
+        String(sourceColumn).trim() && String(targetField).trim()
+    );
 
     if (mappingEntries.length === 0) {
-      setErrorMessage(
-        "Please map at least one column."
-      );
-
+      setErrorMessage("Please map at least one column.");
       return;
     }
 
-    const targetFields =
-      mappingEntries.map(
-        ([, targetField]) =>
-          String(targetField).trim()
-      );
+    const targetFields = mappingEntries.map(([, targetField]) =>
+      String(targetField).trim()
+    );
 
-    const uniqueTargetFields = [
-      ...new Set(targetFields),
-    ];
+    const uniqueTargetFields = [...new Set(targetFields)];
 
-    if (
-      uniqueTargetFields.length !==
-      targetFields.length
-    ) {
-      setErrorMessage(
-        "Duplicate destination fields are not allowed."
-      );
-
+    if (uniqueTargetFields.length !== targetFields.length) {
+      setErrorMessage("Duplicate destination fields are not allowed.");
       return;
     }
-
-    // ==========================================
-    // SOCKET
-    // ==========================================
 
     if (!socket.connected) {
       socket.connect();
     }
 
-    console.log(
-      "Socket ID before upload:",
-      socket.id
-    );
-
     setUploadProgress({
       progress: 0,
       message: "Starting upload...",
     });
-
     setIsUploading(true);
 
     try {
-      const formData =
-        new FormData();
-
-      // File
-      formData.append(
-        "file",
-        file
-      );
-
-      // Dataset name
-      formData.append(
-        "datasetName",
-        datasetName.trim()
-      );
-
-      // Transformation code
-      formData.append(
-        "transformCode",
-        transformCode
-      );
-
-      // Socket ID
-      formData.append(
-        "socketId",
-        socket.id
-      );
-
-      // ==========================================
-      // SOURCE → DESTINATION MAPPING
-      // ==========================================
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("datasetName", datasetName.trim());
+      formData.append("transformCode", transformCode);
+      formData.append("socketId", socket.id);
 
       const backendMapping = {};
-
-      Object.entries(mapping).forEach(
-        ([sourceColumn, targetField]) => {
-          const cleanSource =
-            String(sourceColumn).trim();
-
-          const cleanTarget =
-            String(targetField).trim();
-
-          if (
-            cleanSource &&
-            cleanTarget
-          ) {
-            backendMapping[
-              cleanSource
-            ] = cleanTarget;
-          }
+      Object.entries(mapping).forEach(([sourceColumn, targetField]) => {
+        const cleanSource = String(sourceColumn).trim();
+        const cleanTarget = String(targetField).trim();
+        if (cleanSource && cleanTarget) {
+          backendMapping[cleanSource] = cleanTarget;
         }
-      );
+      });
 
-      formData.append(
-        "mapping",
-        JSON.stringify(
-          backendMapping
-        )
-      );
+      formData.append("mapping", JSON.stringify(backendMapping));
 
-      // ==========================================
-      // API REQUEST
-      // ==========================================
+      const response = await fetch("http://localhost:5000/api/upload", {
+        method: "POST",
+        body: formData,
+      });
 
-      const response =
-        await fetch(
-          "http://localhost:5000/api/upload",
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
-
-      const result =
-        await response.json();
+      const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          result.message ||
-            "Upload failed"
-        );
+        throw new Error(result.message || "Upload failed");
       }
-
-      console.log(
-        "Upload successful:",
-        result
-      );
-
 
       const dataset = result.dataset;
 
-localStorage.setItem(
-  "streamweaverDatasetPreview",
-  JSON.stringify({
-    datasetId: dataset.datasetId,
-    datasetName: dataset.datasetName,
-    fileName: dataset.originalFileName,
-    rowCount: dataset.totalRows,
-    columnCount: dataset.columns.length,
-    columns: dataset.columns,
-    fieldMapping: dataset.mapping,
-    rows: dataset.preview.map((item) => ({
-      ...item.data,
-      _isValid: item.isValid,
-      _errors: item.errors,
-    })),
-  })
-);
-
-      // ==========================================
-      // SUCCESS MODAL
-      // ==========================================
+      localStorage.setItem(
+        "streamweaverDatasetPreview",
+        JSON.stringify({
+          datasetId: dataset.datasetId,
+          datasetName: dataset.datasetName,
+          fileName: dataset.originalFileName,
+          rowCount: dataset.totalRows,
+          columnCount: dataset.columns.length,
+          columns: dataset.columns,
+          fieldMapping: dataset.mapping,
+          rows: dataset.preview.map((item) => ({
+            ...item.data,
+            _isValid: item.isValid,
+            _errors: item.errors,
+          })),
+        })
+      );
 
       setShowSuccessModal(true);
-
     } catch (error) {
-      console.error(
-        "Upload Error:",
-        error
-      );
-
+      console.error("Upload Error:", error);
       setErrorMessage(
-        error.message ||
-          "Upload failed. Please try again."
+        error.message || "Upload failed. Please try again."
       );
-
     } finally {
       setIsUploading(false);
     }
   };
 
   // ==========================================
-  // UPLOAD ANOTHER DATASET
+  // RESET
   // ==========================================
-
   const handleUploadAnother = () => {
     setShowSuccessModal(false);
-
     setDatasetName("");
-
     setFile(null);
-
     setColumns([]);
-
     setMapping({});
-
     setMappingConfirmed(false);
-
     setTransformCode("");
-
-    setUploadProgress({
-      progress: 0,
-      message: "",
-    });
-
+    setUploadProgress({ progress: 0, message: "" });
     setErrorMessage("");
 
-    const fileInput =
-      document.getElementById(
-        "dataset-file"
-      );
-
-    if (fileInput) {
-      fileInput.value = "";
-    }
+    const fileInput = document.getElementById("dataset-file");
+    if (fileInput) fileInput.value = "";
   };
 
   // ==========================================
   // UI
   // ==========================================
-
   return (
     <div className="upload-page">
-
       <div className="upload-shell">
-
         {/* HEADER */}
         <div className="upload-header">
-
           <div className="upload-title-wrap">
-
-            <div className="upload-icon">
-              📦
-            </div>
-
-            <h1>
-              Upload Dataset
-            </h1>
-
+            <div className="upload-icon">📦</div>
+            <h1>Upload Dataset</h1>
           </div>
-
           <span className="upload-status">
-            {isUploading
-              ? "Processing"
-              : "Ready"}
+            {isUploading ? "Processing" : "Ready"}
           </span>
-
         </div>
 
         <div className="upload-body">
-
           {/* STEPPER */}
           <div className="upload-steps">
-
-            <div className="upload-step active">
+            <div className={`upload-step ${currentStep >= 1 ? "active" : ""}`}>
               <span>1</span>
-              <label>
-                Upload
-              </label>
+              <label>Upload</label>
             </div>
-
-            <div className="step-line"></div>
-
-            <div
-              className={`upload-step ${
-                columns.length > 0
-                  ? "active"
-                  : ""
-              }`}
-            >
+            <div className="step-line" />
+            <div className={`upload-step ${currentStep >= 2 ? "active" : ""}`}>
               <span>2</span>
-              <label>
-                Map Columns
-              </label>
+              <label>Map Columns</label>
             </div>
-
-            <div className="step-line"></div>
-
-            <div
-              className={`upload-step ${
-                mappingConfirmed
-                  ? "active"
-                  : ""
-              }`}
-            >
+            <div className="step-line" />
+            <div className={`upload-step ${currentStep >= 3 ? "active" : ""}`}>
               <span>3</span>
-              <label>
-                Confirm
-              </label>
+              <label>Confirm</label>
             </div>
-
-            <div className="step-line"></div>
-
-            <div
-              className={`upload-step ${
-                isUploading
-                  ? "active"
-                  : ""
-              }`}
-            >
+            <div className="step-line" />
+            <div className={`upload-step ${currentStep >= 4 ? "active" : ""}`}>
               <span>4</span>
-              <label>
-                Process
-              </label>
+              <label>Process</label>
             </div>
-
           </div>
 
           {/* DESCRIPTION */}
           <p className="upload-description">
-            Upload your CSV, JSON or XLSX dataset,
-            map columns, and process the data.
+            Upload your CSV, JSON or XLSX dataset, map columns, and process
+            the data.
           </p>
 
           {/* NAME + FILE */}
           <div className="upload-grid">
-
             <div className="upload-field">
-
-              <label htmlFor="dataset-name">
-                Dataset Name
-              </label>
-
+              <label htmlFor="dataset-name">Dataset Name</label>
               <input
                 id="dataset-name"
                 className="upload-input"
                 type="text"
                 placeholder="Enter dataset name"
                 value={datasetName}
-                onChange={(event) =>
-                  setDatasetName(
-                    event.target.value
-                  )
-                }
+                onChange={(event) => setDatasetName(event.target.value)}
               />
-
             </div>
 
             <div className="upload-field">
-
-              <label htmlFor="dataset-file">
-                Choose Dataset
-              </label>
-
+              <label htmlFor="dataset-file">Choose Dataset</label>
               <div className="upload-file-wrap">
-
                 <input
                   id="dataset-file"
                   className="upload-file-input"
                   type="file"
                   accept=".csv,.json,.xlsx"
-                  onChange={
-                    handleFileChange
-                  }
+                  onChange={handleFileChange}
                 />
-
               </div>
-
             </div>
-
           </div>
 
           {/* FILE INFO */}
           <div className="upload-meta">
-
             {file && (
-              <span className="file-chip">
-                Selected: {file.name}
-              </span>
+              <span className="file-chip">Selected: {file.name}</span>
             )}
-
-            <span className="file-format">
-              CSV, JSON, XLSX
-            </span>
-
+            <span className="file-format">CSV, JSON, XLSX</span>
           </div>
 
           {/* ERROR */}
           {errorMessage && (
-            <div
-              className="upload-error"
-              role="alert"
-            >
+            <div className="upload-error" role="alert">
               {errorMessage}
             </div>
           )}
@@ -878,16 +486,13 @@ localStorage.setItem(
             <ColumnMappingPanel
               datasetColumns={columns}
               fieldMapping={mapping}
-              onMappingChange={
-                handleMappingChange
-              }
+              onMappingChange={handleMappingChange}
             />
           )}
 
           {/* CONFIRM MAPPING */}
           {columns.length > 0 && (
             <div className="mapping-confirm">
-
               <button
                 type="button"
                 className="confirm-mapping-button"
@@ -907,31 +512,18 @@ localStorage.setItem(
                   Mapping is ready for processing.
                 </span>
               )}
-
             </div>
           )}
 
           {/* TRANSFORMATION */}
           {columns.length > 0 && (
             <div className="transform-section">
-
-              <h3>
-                Custom Transformation
-              </h3>
-
-              <p>
-                Write JavaScript code to transform
-                each row.
-              </p>
-
+              <h3>Custom Transformation</h3>
+              <p>Write JavaScript code to transform each row.</p>
               <textarea
                 className="transform-code-input"
                 value={transformCode}
-                onChange={(event) =>
-                  setTransformCode(
-                    event.target.value
-                  )
-                }
+                onChange={(event) => setTransformCode(event.target.value)}
                 placeholder={`Example:
 
 return {
@@ -942,56 +534,37 @@ return {
 };`}
                 rows={10}
               />
-
             </div>
           )}
 
           {/* PROGRESS */}
           {isUploading && (
             <div className="upload-progress">
-
               <div className="progress-info">
-
                 <span>
-                  {uploadProgress.message ||
-                    "Processing dataset..."}
+                  {uploadProgress.message || "Processing dataset..."}
                 </span>
-
-                <strong>
-                  {uploadProgress.progress}%
-                </strong>
-
+                <strong>{uploadProgress.progress}%</strong>
               </div>
-
               <div className="progress-bar">
-
                 <div
                   className="progress-bar-fill"
-                  style={{
-                    width: `${uploadProgress.progress}%`,
-                  }}
+                  style={{ width: `${uploadProgress.progress}%` }}
                 />
-
               </div>
-
               <span className="progress-text">
                 Uploading and processing data...
               </span>
-
             </div>
           )}
 
           {/* ACTION */}
           <div className="upload-actions">
-
             <button
               type="button"
               className="upload-button"
               onClick={handleUpload}
-              disabled={
-                isUploading ||
-                !mappingConfirmed
-              }
+              disabled={isUploading || !mappingConfirmed}
             >
               {isUploading
                 ? "Processing..."
@@ -999,58 +572,33 @@ return {
                   ? "Process Dataset"
                   : "Confirm Mapping First"}
             </button>
-
           </div>
-
         </div>
       </div>
 
       {/* SUCCESS MODAL */}
       {showSuccessModal && (
         <div className="success-modal-overlay">
-
           <div className="success-modal">
-
-            <div className="success-icon">
-              ✓
-            </div>
-
-            <h2>
-              Dataset Processed Successfully
-            </h2>
-
+            <div className="success-icon">✓</div>
+            <h2>Dataset Processed Successfully</h2>
             <p>
-              Your dataset has been uploaded and
-              processed successfully.
+              Your dataset has been uploaded and processed successfully.
             </p>
-
             <div className="success-actions">
-
               <button
                 type="button"
-                onClick={() =>
-                  navigate("/dataset-preview")
-                }
+                onClick={() => navigate("/dataset-preview")}
               >
                 View Dataset
               </button>
-
-              <button
-                type="button"
-                onClick={
-                  handleUploadAnother
-                }
-              >
+              <button type="button" onClick={handleUploadAnother}>
                 Upload Another Dataset
               </button>
-
             </div>
-
           </div>
-
         </div>
       )}
-
     </div>
   );
 }

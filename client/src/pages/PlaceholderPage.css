@@ -1,3 +1,7 @@
+/* ============================================================
+   PLACEHOLDER PAGE - PROFESSIONAL
+   ============================================================ */
+
 .placeholder-page {
   display: flex;
   flex-direction: column;
@@ -5,96 +9,247 @@
   justify-content: center;
   min-height: 60vh;
   text-align: left;
+  padding: 32px 24px;
+  animation: fadeIn 0.5s ease-out;
+  max-width: 900px;
 }
 
 .placeholder-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
+  font-size: 56px;
+  margin-bottom: 18px;
+  display: inline-block;
+  animation: float 3s ease-in-out infinite;
+  filter: drop-shadow(0 8px 20px rgba(78, 168, 255, 0.25));
 }
 
 .placeholder-page h1 {
-  font-size: 28px;
-  font-weight: 600;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
   color: #f3f4f6;
-  margin: 0 0 12px;
+  margin: 0 0 14px;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #f3f4f6 0%, #93c5fd 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .placeholder-page p {
-  color: #9ca3af;
-  font-size: 15px;
-  max-width: 560px;
-  line-height: 1.6;
+  color: #94a3b8;
+  font-size: 14.5px;
+  max-width: 600px;
+  line-height: 1.7;
+  margin: 0;
 }
 
+/* ---------- Metrics Grid ---------- */
 .placeholder-metrics {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 18px;
-  width: min(700px, 100%);
-  margin-top: 26px;
+  width: min(720px, 100%);
+  margin-top: 32px;
 }
 
 .placeholder-metric-card {
-  background: rgba(15, 23, 42, 0.7);
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 18px;
-  padding: 18px 18px 16px;
+  background: rgba(20, 37, 68, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 16px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  animation: fadeInUp 0.5s ease-out both;
+}
+
+.placeholder-metric-card:nth-child(1) { animation-delay: 0.05s; }
+.placeholder-metric-card:nth-child(2) { animation-delay: 0.15s; }
+.placeholder-metric-card:nth-child(3) { animation-delay: 0.25s; }
+
+.placeholder-metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #4ea8ff, transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.placeholder-metric-card:hover {
+  border-color: rgba(78, 168, 255, 0.35);
+  background: rgba(30, 52, 90, 0.7);
+  transform: translateY(-4px);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.25);
+}
+
+.placeholder-metric-card:hover::before {
+  opacity: 1;
 }
 
 .metric-label {
   color: #94a3b8;
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
+  font-size: 11px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-}
-
-.metric-value {
-  color: #f8fafc;
-  font-size: 1.5rem;
   font-weight: 700;
 }
 
+.metric-value {
+  color: #f3f4f6;
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* ---------- Settings Page ---------- */
 .settings-page {
   width: 100%;
+  max-width: 1100px;
 }
 
 .settings-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 20px;
   width: 100%;
-  max-width: 900px;
-  margin-top: 28px;
+  max-width: 950px;
+  margin-top: 32px;
 }
 
 .settings-card {
   text-align: left;
-  padding: 24px 22px;
+  padding: 24px;
   border-radius: 18px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(20, 37, 68, 0.55);
   color: #e2e8f0;
   cursor: pointer;
-  transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  font-family: inherit;
+  animation: fadeInUp 0.5s ease-out both;
+}
+
+.settings-card:nth-child(1) { animation-delay: 0.05s; }
+.settings-card:nth-child(2) { animation-delay: 0.15s; }
+.settings-card:nth-child(3) { animation-delay: 0.25s; }
+
+.settings-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #4ea8ff, transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .settings-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(79, 70, 229, 0.45);
-  background: rgba(15, 23, 42, 0.88);
+  transform: translateY(-6px);
+  border-color: rgba(78, 168, 255, 0.4);
+  background: rgba(30, 52, 90, 0.75);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.settings-card:hover::before {
+  opacity: 1;
 }
 
 .settings-card-title {
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 700;
   margin-bottom: 10px;
+  color: #f3f4f6;
+  letter-spacing: -0.01em;
 }
 
 .settings-card-description {
-  color: #cbd5e1;
+  color: #94a3b8;
   line-height: 1.6;
-  font-size: 0.95rem;
+  font-size: 13.5px;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 640px) {
+  .placeholder-page {
+    padding: 24px 16px;
+    align-items: center;
+    text-align: center;
+  }
+
+  .placeholder-icon {
+    font-size: 44px;
+    margin-bottom: 14px;
+  }
+
+  .placeholder-page h1 {
+    font-size: 1.35rem;
+  }
+
+  .placeholder-page p {
+    font-size: 13.5px;
+    max-width: 100%;
+  }
+
+  .placeholder-metrics,
+  .settings-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    width: 100%;
+  }
+
+  .placeholder-metric-card,
+  .settings-card {
+    padding: 18px;
+    border-radius: 14px;
+  }
+
+  .metric-value {
+    font-size: 1.4rem;
+  }
+
+  .settings-card-title {
+    font-size: 1rem;
+  }
+
+  .settings-card-description {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .placeholder-page {
+    padding: 20px 12px;
+  }
+
+  .placeholder-icon {
+    font-size: 38px;
+  }
+
+  .placeholder-page h1 {
+    font-size: 1.2rem;
+  }
+
+  .placeholder-metric-card,
+  .settings-card {
+    padding: 16px;
+  }
+
+  .metric-value {
+    font-size: 1.25rem;
+  }
 }

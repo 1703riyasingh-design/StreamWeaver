@@ -25,11 +25,27 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<DashboardLayout />}>
 
+            {/* Dashboard */}
             <Route path="/dashboard" element={<Dashboard />} />
 
-          
+            {/* Streams */}
+            <Route
+              path="/streams"
+              element={
+                <PlaceholderPage
+                  icon="📺"
+                  title="Streams"
+                  description="Live sessions, scheduled broadcasts, and content delivery status across all channels."
+                  metrics={[
+                    { label: "Live now", value: "14" },
+                    { label: "Scheduled", value: "27" },
+                    { label: "Avg uptime", value: "99.4%" },
+                  ]}
+                />
+              }
+            />
 
-           
+            {/* Media Library */}
             <Route
               path="/media"
               element={
@@ -46,13 +62,14 @@ function App() {
               }
             />
 
+            {/* Analytics */}
             <Route
               path="/analytics"
               element={
                 <PlaceholderPage
                   icon="📊"
                   title="Analytics"
-                  description="Audience insights, engagement trends, and performance reports for your active content." 
+                  description="Audience insights, engagement trends, and performance reports for your active content."
                   metrics={[
                     { label: "Reach", value: "2.4M" },
                     { label: "Engagement", value: "68%" },
@@ -62,50 +79,34 @@ function App() {
               }
             />
 
-            <Route
-  path="/profile"
-  element={<ProfilePage />}
-/>
+            {/* Profile */}
+            <Route path="/profile" element={<ProfilePage />} />
 
-            <Route
-              path="/settings"
-              element={<SettingsPage />}
-            />
+            {/* Settings */}
+            <Route path="/settings" element={<SettingsPage />} />
 
-            <Route
-              path="/security"
-              element={<SecuritySettings />}
-            />
+            {/* Security */}
+            <Route path="/security" element={<SecuritySettings />} />
 
-            <Route
-              path="/notifications"
-              element={<NotificationSettings />}
-            />
+            {/* Notifications */}
+            <Route path="/notifications" element={<NotificationSettings />} />
 
-            <Route
-              path="/upload-dataset"
-              element={<UploadDataset />}
-            />
+            {/* Upload Dataset */}
+            <Route path="/upload-dataset" element={<UploadDataset />} />
 
-            <Route
+            {/* Dataset Preview */}
+            <Route path="/dataset-preview" element={<DatasetPreview />} />
 
-  path="/dataset-preview"
-  element={<DatasetPreview />}
-/>
+            {/* Datasets List */}
+            <Route path="/datasets" element={<DatasetList />} />
 
-<Route
-  path="/datasets"
-  element={<DatasetList />}
-/>
-
-<Route
-  path="/datasets/:id"
-  element={<DatasetDetails />}
-/>
+            {/* Dataset Details */}
+            <Route path="/datasets/:id" element={<DatasetDetails />} />
 
           </Route>
         </Route>
 
+        {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
 
       </Routes>
